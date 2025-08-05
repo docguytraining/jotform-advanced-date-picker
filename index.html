@@ -1,42 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Date Range Picker Widget</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conflict Date Picker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="date-range-picker">
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate">
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate">
-        
-        <div id="calendar"></div>
-    </div>
+  <div class="calendar-container">
+    <div id="datePicker"></div>
+    <div id="selectedDates" class="selected-dates"></div>
+    <div id="feedback" class="feedback"></div>
+  </div>
 
-    <script src="script.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Date Range Picker Widget</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="date-range-picker">
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate">
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate">
-        
-        <div id="calendar"></div>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="script.js"></script>
 </body>
 </html>

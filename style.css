@@ -1,55 +1,46 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 20px;
 }
 
-.date-range-picker {
-    display: flex;
-    flex-direction: column;
-    max-width: 600px;
-    margin: 0 auto;
+.calendar-container {
+  max-width: 700px;
+  margin: 0 auto;
 }
 
-input[type="date"] {
-    margin: 5px 0;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+#datePicker {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
 }
 
-#calendar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 20px;
+.flatpickr-calendar {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
 }
 
-.day {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    font-size: 14px;
+.selected-dates {
+  margin-top: 20px;
+  font-size: 15px;
+  background-color: #fff;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-.day.selected {
-    background-color: #4CAF50;
-    color: white;
+.selected-dates ul {
+  margin: 8px 0 0 16px;
+  padding-left: 0;
 }
 
-.day:hover {
-    background-color: #f0f0f0;
-}
-
-.day.disabled {
-    background-color: #ddd;
-    cursor: not-allowed;
+.feedback {
+  margin-top: 12px;
+  color: #d32f2f;
+  font-size: 14px;
 }

@@ -1,82 +1,104 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const startDateInput = document.getElementById("startDate");
-    const endDateInput = document.getElementById("endDate");
-    const calendarContainer = document.getElementById("calendar");
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
 
-    // Function to generate the calendar
-    function generateCalendar(startDate, endDate) {
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
+  const startDateStr = params.get("startDate") || "2025-08-01";
+  const endDateStr = params.get("endDate") || "2025-08-31";
+  const minSelectable = parseInt(params.get("minSelectableDates") || "0", 10);
+  const maxSelectable = parseInt(params.get("maxSelectableDates") || "20", 10);
+  const displayFormat = params.get("displayFormat") || "Y-m-d";
 
-        const currentMonth = startDateObj.getMonth();
-        const currentYear = startDateObj.getFullYear();
+  const weekdaysRaw = params.get("allowedWeekdays") || "0,1,2,3,4,5,6";
+  const allowedWeekdays = weekdaysRaw
+    .split(",")
+    .map(s => parseInt(s.trim(), 10))
+    .filter(n => !isNaN(n) && n >= 0 && n <= 6);
 
-        // Clear existing calendar
-        calendarContainer.innerHTML = "";
+  const excludedDates = (params.get("excludedDates") || "")
+    .split(",")
+    .map(d => d.trim())
+    .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
 
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-        const totalDaysInMonth = lastDayOfMonth.getDate();
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
 
-        // Create days for the calendar
-        for (let i = 1; i <= totalDaysInMonth; i++) {
-            const dayElement = document.createElement("div");
-            dayElement.classList.add("day");
-            dayElement.textContent = i;
-            dayElement.dataset.date = `${currentYear}-${currentMonth + 1}-${i}`;
+  // ✅ Calculate first valid selectable date
+  let defaultDate = null;
+  const probe = new Date(startDate);
+  while (probe <= endDate) {
+    const day = probe.getDay();
 
-            // Mark selected days
-            if (isDateInRange(`${currentYear}-${currentMonth + 1}-${i}`, startDate, endDate)) {
-                dayElement.classList.add("selected");
-            }
+    const iso = [
+      probe.getFullYear().toString().padStart(4, "0"),
+      (probe.getMonth() + 1).toString().padStart(2, "0"),
+      probe.getDate().toString().padStart(2, "0")
+    ].join("-");
 
-            // Add hover effect
-            dayElement.addEventListener("click", function() {
-                toggleSelectedDay(dayElement, startDate, endDate);
-            });
-
-            calendarContainer.appendChild(dayElement);
-        }
+    if (allowedWeekdays.includes(day) && !excludedDates.includes(iso)) {
+      defaultDate = iso;
+      break;
     }
+    probe.setDate(probe.getDate() + 1);
+  }
 
-    // Check if a date is in the range
-    function isDateInRange(dateStr, startDate, endDate) {
-        return dateStr >= startDate && dateStr <= endDate;
+  const feedbackEl = document.getElementById("feedback");
+  const selectedDatesEl = document.getElementById("selectedDates");
+
+  const fp = flatpickr("#datePicker", {
+    mode: "multiple",
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: displayFormat,
+    minDate: startDateStr,
+    maxDate: endDateStr,
+    defaultDate: defaultDate,
+    inline: true,
+
+    disable: [
+      function (date) {
+        const day = date.getDay();
+        const iso = [
+          date.getFullYear().toString().padStart(4, "0"),
+          (date.getMonth() + 1).toString().padStart(2, "0"),
+          date.getDate().toString().padStart(2, "0")
+        ].join("-");
+        return !allowedWeekdays.includes(day) || excludedDates.includes(iso);
+      }
+    ],
+
+    onReady: function () {
+      if (defaultDate) {
+        fp.jumpToDate(defaultDate);
+      } else {
+        fp.jumpToDate(startDateStr);
+      }
+    },
+
+    onChange: (selectedDates) => {
+      const rawDates = selectedDates.map(d =>
+        `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`
+      );
+
+      if (rawDates.length > maxSelectable) {
+        feedbackEl.textContent = `You can select up to ${maxSelectable} date(s).`;
+        fp.setDate(selectedDates.slice(0, maxSelectable));
+        return;
+      }
+
+      feedbackEl.textContent =
+        rawDates.length < minSelectable
+          ? `Select at least ${minSelectable} date(s).`
+          : "";
+
+      const formattedDates = selectedDates.map(d => fp.formatDate(d, displayFormat));
+      selectedDatesEl.innerHTML = formattedDates.length
+        ? `<strong>Selected Dates:</strong><ul>${formattedDates.map(d => `<li>${d}</li>`).join("")}</ul>`
+        : `<em>No dates selected yet.</em>`;
+
+      window.parent.postMessage({
+        type: "control",
+        method: "set",
+        value: rawDates.join(",")
+      }, "*");
     }
-
-    // Toggle selected dates
-    function toggleSelectedDay(dayElement, startDate, endDate) {
-        const selectedDate = dayElement.dataset.date;
-        const selectedDates = getSelectedDates(startDate, endDate);
-
-        if (selectedDates.includes(selectedDate)) {
-            // Remove from selected dates
-            dayElement.classList.remove("selected");
-        } else {
-            // Add to selected dates
-            dayElement.classList.add("selected");
-        }
-    }
-
-    // Get selected dates as a comma-separated list
-    function getSelectedDates(startDate, endDate) {
-        const selectedDays = [];
-        document.querySelectorAll(".day.selected").forEach(day => {
-            selectedDays.push(day.dataset.date);
-        });
-        return selectedDays.join(",");
-    }
-
-    // Listen for start and end date changes
-    startDateInput.addEventListener("change", function() {
-        if (startDateInput.value && endDateInput.value) {
-            generateCalendar(startDateInput.value, endDateInput.value);
-        }
-    });
-
-    endDateInput.addEventListener("change", function() {
-        if (startDateInput.value && endDateInput.value) {
-            generateCalendar(startDateInput.value, endDateInput.value);
-        }
-    });
+  });
 });

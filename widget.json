@@ -1,46 +1,69 @@
 {
-  "title": "Advanced Date Picker",
-  "version": "1.0.0",
-  "description": "A custom date picker widget for selecting multiple dates within a given range.",
+  "title": "Conflict Date Picker",
+  "version": "2.1.0",
+  "description": "Select individual conflict dates within a configured range.",
   "author": "Paul Pehrson",
-  "homepage": "https://github.com/docguytraining/jotform-advanced-date-picker",
-  "icon": "https://path/to/your/icon.png",
-  "width": "100%",
-  "height": "400px",
-  "preview": "https://path/to/widget-preview.png",
   "type": "iframe",
+  "width": "100%",
+  "height": "420px",
   "assets": {
-    "js": [
-      "script.js"
-    ],
-    "css": [
-      "style.css"
-    ]
+    "js": ["script.js"],
+    "css": ["style.css"]
   },
   "settings": [
     {
-      "name": "startDateLabel",
+      "name": "startDate",
       "type": "text",
-      "label": "Start Date Label",
-      "default": "Start Date"
+      "label": "Start Date (YYYY-MM-DD)",
+      "default": "2025-08-15"
     },
     {
-      "name": "endDateLabel",
+      "name": "endDate",
       "type": "text",
-      "label": "End Date Label",
-      "default": "End Date"
+      "label": "End Date (YYYY-MM-DD)",
+      "default": "2025-09-30"
     },
     {
-      "name": "disabledPastDates",
-      "type": "checkbox",
-      "label": "Disable past dates",
-      "default": false
+      "name": "minSelectableDates",
+      "type": "number",
+      "label": "Minimum Dates to Select",
+      "default": 0
     },
     {
       "name": "maxSelectableDates",
       "type": "number",
-      "label": "Max Selectable Dates",
-      "default": 10
+      "label": "Maximum Dates to Select",
+      "default": 20
+    },
+    {
+      "name": "displayFormat",
+      "type": "text",
+      "label": "Date Display Format",
+      "default": "Y-m-d",
+      "hint": "Examples: Y-m-d (2025-08-19), d M (19 Aug), D, M j (Tue, Aug 19)"
+    },
+    {
+      "name": "allowedWeekdays",
+      "type": "checkbox-group",
+      "label": "Allowed Days of the Week",
+      "options": [
+        { "label": "Sunday", "value": "0" },
+        { "label": "Monday", "value": "1" },
+        { "label": "Tuesday", "value": "2" },
+        { "label": "Wednesday", "value": "3" },
+        { "label": "Thursday", "value": "4" },
+        { "label": "Friday", "value": "5" },
+        { "label": "Saturday", "value": "6" }
+      ],
+      "default": ["0", "1", "2", "3", "4", "5", "6"],
+      "hint": "Uncheck any days of the week you want to exclude from selection."
+    },
+    {
+      "name": "excludedDates",
+      "type": "text",
+      "label": "Excluded Dates (comma-separated)",
+      "default": "",
+      "hint": "List specific dates to exclude (e.g., 2025-09-02,2025-08-31)"
     }
   ]
 }
