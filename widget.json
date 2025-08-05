@@ -1,0 +1,46 @@
+{
+  "title": "Advanced Date Picker",
+  "version": "1.0.0",
+  "description": "A custom date picker widget for selecting multiple dates within a given range.",
+  "author": "Paul Pehrson",
+  "homepage": "https://github.com/docguytraining/jotform-advanced-date-picker",
+  "icon": "https://path/to/your/icon.png",
+  "width": "100%",
+  "height": "400px",
+  "preview": "https://path/to/widget-preview.png",
+  "type": "iframe",
+  "assets": {
+    "js": [
+      "script.js"
+    ],
+    "css": [
+      "style.css"
+    ]
+  },
+  "settings": [
+    {
+      "name": "startDateLabel",
+      "type": "text",
+      "label": "Start Date Label",
+      "default": "Start Date"
+    },
+    {
+      "name": "endDateLabel",
+      "type": "text",
+      "label": "End Date Label",
+      "default": "End Date"
+    },
+    {
+      "name": "disabledPastDates",
+      "type": "checkbox",
+      "label": "Disable past dates",
+      "default": false
+    },
+    {
+      "name": "maxSelectableDates",
+      "type": "number",
+      "label": "Max Selectable Dates",
+      "default": 10
+    }
+  ]
+}

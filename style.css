@@ -1,0 +1,55 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.date-range-picker {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+input[type="date"] {
+    margin: 5px 0;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#calendar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.day {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.day.selected {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.day:hover {
+    background-color: #f0f0f0;
+}
+
+.day.disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+}
