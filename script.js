@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
     const calendarEl = document.getElementById("calendar");
-    const outputEl = document.getElementById("postOutput");
     const selectedDisplay = document.getElementById("selectedDatesDisplay");
     const hiddenInput = document.getElementById("selectedDates") || createHiddenInput();
 
@@ -9,26 +8,31 @@ document.addEventListener("DOMContentLoaded", function () {
         endDate: calendarEl.dataset.endDate,
         displayFormat: calendarEl.dataset.displayFormat || "Y-m-d",
         allowedWeekdays: (calendarEl.dataset.allowedWeekdays || "")
-            .split(",").map(Number).filter(n => !isNaN(n)),
+            .split(",").map(n => parseInt(n)).filter(n => Number.isInteger(n) && n >= 0 && n <= 6),
         excludedDates: (calendarEl.dataset.excludedDates || "")
-            .split(",").filter(Boolean),
+            .split(",").map(s => s.trim()).filter(isValidISODate),
         minSelectableDates: parseInt(calendarEl.dataset.minSelectableDates || "0"),
         maxSelectableDates: parseInt(calendarEl.dataset.maxSelectableDates || "999")
     };
 
-    let limitExceeded = false;
+    const selectableDates = getSelectableDatesInRange(
+        config.startDate,
+        config.endDate,
+        config.allowedWeekdays,
+        config.excludedDates
+    );
 
-    function isValidISODate(dateStr) {
-        return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(new Date(dateStr).getTime());
-    }
+    console.log("Valid selectable dates:", selectableDates);
 
-    if (!isValidISODate(config.startDate) || !isValidISODate(config.endDate)) {
-        calendarEl.innerHTML = "<strong style='color:red;'>Error: Start and end dates must be valid ISO dates (YYYY-MM-DD).</strong>";
-        console.error("Invalid date configuration:", config.startDate, config.endDate);
+    const configErrors = validateConfig(config, selectableDates);
+    if (configErrors.length > 0) {
+        calendarEl.innerHTML = "<strong style='color:red;'>" + configErrors.join("<br/>") + "</strong>";
+        console.error("Configuration errors:", configErrors);
         return;
     }
 
-    const maxReachedWarning = createWarningMessage();
+    const warningEl = createWarningMessage();
+    let selectedDates = [];
 
     flatpickr(calendarEl, {
         mode: "multiple",
@@ -45,38 +49,92 @@ document.addEventListener("DOMContentLoaded", function () {
         ],
         onChange: function (dates, dateStr, instance) {
             if (dates.length > config.maxSelectableDates) {
-                limitExceeded = true;
                 showWarning("You can select up to " + config.maxSelectableDates + " dates.");
-
-                setTimeout(() => {
-                    dates.pop(); // remove extra date
-                    instance.setDate(dates, true); // reset without triggering another full clear
-                    limitExceeded = false;
-                }, 10);
-
+                instance.setDate(selectedDates, true);
                 return;
             }
 
-            if (!limitExceeded) {
-                if (dates.length < config.minSelectableDates) {
-                    showWarning("You must select at least " + config.minSelectableDates + " dates.");
-                } else {
-                    clearWarning();
-                }
+            selectedDates = dates;
+
+            if (dates.length < config.minSelectableDates) {
+                showWarning("You must select at least " + config.minSelectableDates + " dates.");
+            } else {
+                clearWarning();
             }
 
             updateSelectedDates(dates);
         }
     });
 
-    function updateSelectedDates(dates) {
-        const formatted = dates.map(d => formatDate(d));
-        selectedDisplay.textContent = formatted.join(", ");
-        hiddenInput.value = formatted.join(",");
+    function isValidISODate(dateStr) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(new Date(dateStr).getTime());
     }
 
-    function formatDate(date) {
-        return date.toISOString().split("T")[0];
+    function formatLocalDate(date) {
+        return date.getFullYear() + "-" +
+            String(date.getMonth() + 1).padStart(2, "0") + "-" +
+            String(date.getDate()).padStart(2, "0");
+    }
+
+    function getSelectableDatesInRange(start, end, allowedWeekdays, excludedDates) {
+        const dates = [];
+        if (!isValidISODate(start) || !isValidISODate(end)) {
+            return dates;
+        }
+
+        const current = new Date(start + 'T00:00:00');
+        const endDate = new Date(end + 'T00:00:00');
+
+        while (current <= endDate) {
+            const iso = formatLocalDate(current);
+            const day = current.getDay();
+            const isExcluded = excludedDates.includes(iso);
+            const isAllowed = allowedWeekdays.length === 0 || allowedWeekdays.includes(day);
+
+            if (!isExcluded && isAllowed) {
+                dates.push(iso);
+            }
+
+            current.setDate(current.getDate() + 1);
+        }
+
+        return dates;
+    }
+
+    function validateConfig(cfg, selectable) {
+        const errors = [];
+
+        if (!isValidISODate(cfg.startDate)) {
+            errors.push("Start date must be a valid ISO date (YYYY-MM-DD).");
+        }
+
+        if (!isValidISODate(cfg.endDate)) {
+            errors.push("End date must be a valid ISO date (YYYY-MM-DD).");
+        }
+
+        if (
+            isValidISODate(cfg.startDate) &&
+            isValidISODate(cfg.endDate) &&
+            new Date(cfg.startDate) > new Date(cfg.endDate)
+        ) {
+            errors.push("Start date must be before or equal to end date.");
+        }
+
+        if (cfg.minSelectableDates > cfg.maxSelectableDates) {
+            errors.push("Minimum selectable dates cannot exceed the maximum.");
+        }
+
+        if (selectable.length < cfg.minSelectableDates) {
+            errors.push(`Only ${selectable.length} selectable date(s) available, but minimum required is ${cfg.minSelectableDates}.`);
+        }
+
+        return errors;
+    }
+
+    function updateSelectedDates(dates) {
+        const formatted = dates.map(d => formatLocalDate(d));
+        selectedDisplay.textContent = formatted.join(", ");
+        hiddenInput.value = formatted.join(",");
     }
 
     function createHiddenInput() {
@@ -89,19 +147,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function createWarningMessage() {
-        const el = document.createElement("div");
-        el.id = "calendar-warning";
-        el.style.color = "red";
-        el.style.marginTop = "0.5em";
-        calendarEl.parentNode.insertBefore(el, calendarEl.nextSibling);
+        let el = document.getElementById("calendar-warning");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "calendar-warning";
+            el.style.color = "red";
+            el.style.marginTop = "0.5em";
+            calendarEl.parentNode.insertBefore(el, calendarEl.nextSibling);
+        }
         return el;
     }
 
     function showWarning(message) {
-        maxReachedWarning.textContent = message;
+        warningEl.textContent = message;
     }
 
     function clearWarning() {
-        maxReachedWarning.textContent = "";
+        warningEl.textContent = "";
     }
 });
