@@ -1,15 +1,25 @@
 {
-  "title": "Conflict Date Picker",
-  "version": "2.1.0",
+  "title": "Advanced Date Picker",
+  "version": "1.0.0",
   "description": "Select individual conflict dates within a configured range.",
   "author": "Paul Pehrson",
+  "email": "paulpehrson@gmail.com",
+  "license": "MIT",
   "type": "iframe",
   "width": "100%",
   "height": "420px",
   "assets": {
-    "js": ["script.js"],
-    "css": ["style.css"]
+    "js": [
+      "flatpicker.js",
+      "script.js",
+      "widget.js"
+    ],
+    "css": [
+      "flatpicker.min.css",
+      "style.css"
+    ]
   },
+  "iframe": true,
   "settings": [
     {
       "name": "startDate",
