@@ -24,8 +24,13 @@
       function () {
         console.log("[widget.js] flatpickr and JFCustomWidget are available");
 
+
+
+
+
+            console.log("[widget.js] Calling getWidgetSettings()");
         JFCustomWidget.getWidgetSettings(function (settings) {
-          console.log("[widget.js] Received widget settings:", settings);
+            console.log("[widget.js] Received widget settings:", settings);
 
           const calendarEl = document.createElement("div");
           calendarEl.id = "calendar";
