@@ -211,7 +211,10 @@
         }
 
         try {
+          // Detect if running inside Jotform by checking for the parent window origin
+          const isJotform = window.parent !== window && document.referrer.includes("jotform");
           if (
+            isJotform &&
             typeof window.JFCustomWidget === "object" &&
             typeof JFCustomWidget.getWidgetSettings === "function"
           ) {
@@ -232,7 +235,7 @@
               runWidget(settings);
             });
           } else {
-            // Local testing: no JFCustomWidget or no getWidgetSettings
+            // Local testing: always use fallback settings
             const settings = {
               startDate: "2025-08-01",
               endDate: "2025-08-31",
@@ -242,7 +245,7 @@
               minSelectableDates: "1",
               maxSelectableDates: "5"
             };
-            console.warn("[widget.js] No JFCustomWidget.getWidgetSettings; using fallback settings:", settings);
+            console.warn("[widget.js] No JFCustomWidget.getWidgetSettings or not in Jotform; using fallback settings:", settings);
             runWidget(settings);
           }
         } catch (e) {
