@@ -22,3 +22,9 @@ window.onload = function () {
     });
 };
 
+window.onload = function () {
+    JFCustomWidget.getWidgetSettings(function (settings) {
+        alert("🔥 SETTINGS:\n" + JSON.stringify(settings, null, 2));
+        console.log("🔥 SETTINGS:", settings);
+    });
+};
