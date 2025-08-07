@@ -215,6 +215,7 @@
             typeof window.JFCustomWidget === "object" &&
             typeof JFCustomWidget.getWidgetSettings === "function"
           ) {
+            console.log("[widget.js] Calling JFCustomWidget.getWidgetSettings...");
             JFCustomWidget.getWidgetSettings(function (settings) {
               console.log("[widget.js] Received widget settings:", settings);
               if (!settings || Object.keys(settings).length === 0) {
