@@ -27,6 +27,7 @@ window.onload = function () {
         alert("🔥 SETTINGS:\n" + JSON.stringify(settings, null, 2));
         console.log("🔥 SETTINGS:", settings);
     });
+    
     if (typeof JFCustomWidget === "undefined") {
     alert("⚠️ JFCustomWidget is undefined. Are you running outside Jotform?");
     return;
