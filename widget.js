@@ -27,6 +27,20 @@
       },
       function () {
         console.log("[widget.js] flatpickr and JFCustomWidget are available");
+            try {
+            console.log("[widget.js] Calling getWidgetSettings()");
+            JFCustomWidget.getWidgetSettings(function (settings) {
+                console.log("[widget.js] Callback fired. Settings received:", settings);
+
+                if (!settings || Object.keys(settings).length === 0) {
+                console.warn("[widget.js] No settings received from Jotform. Check widget setup.");
+                }
+
+                // inject DOM + calendar logic here
+            });
+            } catch (e) {
+            console.error("[widget.js] Error calling getWidgetSettings:", e);
+            }
 
         try {
           console.log("[widget.js] Calling getWidgetSettings()");
