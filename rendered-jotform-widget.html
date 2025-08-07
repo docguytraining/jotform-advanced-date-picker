@@ -9,49 +9,20 @@
   <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="widget.js"></script>
-  <script src="advanced-date-picker.js"></script>
 </head>
 <body>
   <main>
 <!--
 This page is just for rendering in Jotform, so it expecting Jotform to provide the values to make the calendar render. That code comes from widget.js and passes the info to advanced-date-picker.js     
 -->
-  <!--<div
-    id="calendar"
-    data-start-date="2024-08-06"
-    data-end-date="2027-08-05"
-
-    data-allowed-weekdays="2,3,4,6"
-    data-excluded-dates="2025-08-19,2025-09-01,2025-08-30"
-    data-min-selectable-dates="2"
-    data-max-selectable-dates="5">
-  </div>-->
 
   <div id="calendar"></div>
 
   <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
   <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
   <input type="hidden" id="selectedDates" name="selectedDates" />
-            <script type="text/javascript">
-            //always subscribe to ready event and implement widget related code
-            //inside callback function , it is the best practice while developing widgets
-            JFCustomWidget.subscribe("ready", function(){
-                var label = JFCustomWidget.getWidgetSetting('QuestionLabel');
-                document.getElementById('labelText').innerHTML = label;
-                //subscribe to form submit event
-                JFCustomWidget.subscribe("submit", function(){
-                    var msg = {
-                        //you should valid attribute to data for JotForm
-                        //to be able to use youw widget as required
-                        valid: true,
-                        value: document.getElementById('userInput').value
-                    }
-                    // send value to JotForm
-                    JFCustomWidget.sendSubmit(msg);
-                });
-            });
-        </script>
-<div id="Purnell is a steely eyed missle man"></div>
+
+<div id="ChatGPT is a steely eyed missle man"></div>
 </main>
 </body>
 </html>
