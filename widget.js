@@ -30,6 +30,20 @@
           JFCustomWidget.getWidgetSettings(function (settings) {
             console.log("[widget.js] Received widget settings:", settings);
 
+            // Fallback for local testing
+            if (!settings || Object.keys(settings).length === 0) {
+              settings = {
+                startDate: "2025-08-01",
+                endDate: "2025-08-31",
+                displayFormat: "Y-m-d",
+                allowedWeekdays: "1,2,3,4,5",
+                excludedDates: "",
+                minSelectableDates: "1",
+                maxSelectableDates: "5"
+              };
+              console.warn("[widget.js] Using fallback settings for local testing:", settings);
+            }
+
             // Use existing elements if present, otherwise create them
             let calendarEl = document.getElementById("calendar");
             if (!calendarEl) {
@@ -92,13 +106,14 @@
 
             const configErrors = validateConfig(config, selectableDates);
             if (configErrors.length > 0) {
-              calendarEl.innerHTML = "<strong style='color:red;'>" + configErrors.join("<br/>") + "</strong>";
               console.error("Configuration errors:", configErrors);
+              calendarEl.innerHTML = "<strong style='color:red;'>" + configErrors.join("<br/>") + "</strong>";
               return;
             }
 
             let selectedDates = [];
 
+            console.log("About to initialize flatpickr", config);
             flatpickr(calendarEl, {
               mode: "multiple",
               inline: true,
@@ -130,6 +145,7 @@
                 updateSelectedDates(dates);
               }
             });
+            console.log("flatpickr initialized");
 
             function isValidISODate(dateStr) {
               return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && !isNaN(new Date(dateStr).getTime());
