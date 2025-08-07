@@ -24,7 +24,7 @@
       function () {
         console.log("[widget.js] flatpickr is available");
 
-        function runWidget(settings) {
+        function runWidget(settings, fromJotform = false) {
           // Use existing elements if present, otherwise create them
           let calendarEl = document.getElementById("calendar");
           if (!calendarEl) {
@@ -208,20 +208,22 @@
           }
           // --- End advanced-date-picker.js logic ---
 
-          // Display all settings in the HTML for debugging
-          let debugDiv = document.getElementById("jotform-settings-debug");
-          if (!debugDiv) {
-            debugDiv = document.createElement("div");
-            debugDiv.id = "jotform-settings-debug";
-            debugDiv.style.background = "#f8f8f8";
-            debugDiv.style.border = "1px solid #ccc";
-            debugDiv.style.fontSize = "12px";
-            debugDiv.style.margin = "10px 0";
-            debugDiv.style.padding = "8px";
-            document.body.insertBefore(debugDiv, document.body.firstChild);
+          // Only display settings table if data came from Jotform
+          if (fromJotform) {
+            let debugDiv = document.getElementById("jotform-settings-debug");
+            if (!debugDiv) {
+              debugDiv = document.createElement("div");
+              debugDiv.id = "jotform-settings-debug";
+              debugDiv.style.background = "#f8f8f8";
+              debugDiv.style.border = "1px solid #ccc";
+              debugDiv.style.fontSize = "12px";
+              debugDiv.style.margin = "10px 0";
+              debugDiv.style.padding = "8px";
+              document.body.insertBefore(debugDiv, document.body.firstChild);
+            }
+            debugDiv.innerHTML = "<strong>Jotform Widget Settings:</strong><br><pre style='white-space:pre-wrap;'>" +
+              JSON.stringify(settings, null, 2) + "</pre>";
           }
-          debugDiv.innerHTML = "<strong>Jotform Widget Settings:</strong><br><pre style='white-space:pre-wrap;'>" +
-            JSON.stringify(settings, null, 2) + "</pre>";
 
         }
 
@@ -258,8 +260,10 @@
               if (!settings || Object.keys(settings).length === 0) {
                 settings = fallbackSettings;
                 console.warn("[widget.js] Using fallback settings for empty settings:", settings);
+                runWidget(settings, false); // fallback, don't show table
+              } else {
+                runWidget(settings, true); // from Jotform, show table
               }
-              runWidget(settings);
             });
           } else {
             // Local testing: always use fallback settings
