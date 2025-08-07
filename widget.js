@@ -20,9 +20,9 @@
     console.log("[widget.js] DOMContentLoaded");
 
     waitFor(
-      () => typeof flatpickr === "function" && typeof JFCustomWidget === "object",
+      () => typeof flatpickr === "function",
       function () {
-        console.log("[widget.js] flatpickr and JFCustomWidget are available");
+        console.log("[widget.js] flatpickr is available");
 
         function runWidget(settings) {
           // Use existing elements if present, otherwise create them
@@ -212,6 +212,7 @@
 
         try {
           if (
+            typeof window.JFCustomWidget === "object" &&
             typeof JFCustomWidget.getWidgetSettings === "function"
           ) {
             JFCustomWidget.getWidgetSettings(function (settings) {
@@ -248,13 +249,16 @@
           console.error("[widget.js] Exception in getWidgetSettings block:", e);
         }
 
-        JFCustomWidget.subscribe("submit", function () {
-          const msg = {
-            valid: true,
-            value: document.getElementById("selectedDates")?.value || ""
-          };
-          JFCustomWidget.sendSubmit(msg);
-        });
+        // Only subscribe if JFCustomWidget exists
+        if (typeof window.JFCustomWidget === "object" && typeof JFCustomWidget.subscribe === "function") {
+          JFCustomWidget.subscribe("submit", function () {
+            const msg = {
+              valid: true,
+              value: document.getElementById("selectedDates")?.value || ""
+            };
+            JFCustomWidget.sendSubmit(msg);
+          });
+        }
       }
     );
   });
