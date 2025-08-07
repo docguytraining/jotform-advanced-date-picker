@@ -208,6 +208,21 @@
           }
           // --- End advanced-date-picker.js logic ---
 
+          // Display all settings in the HTML for debugging
+          let debugDiv = document.getElementById("jotform-settings-debug");
+          if (!debugDiv) {
+            debugDiv = document.createElement("div");
+            debugDiv.id = "jotform-settings-debug";
+            debugDiv.style.background = "#f8f8f8";
+            debugDiv.style.border = "1px solid #ccc";
+            debugDiv.style.fontSize = "12px";
+            debugDiv.style.margin = "10px 0";
+            debugDiv.style.padding = "8px";
+            document.body.insertBefore(debugDiv, document.body.firstChild);
+          }
+          debugDiv.innerHTML = "<strong>Jotform Widget Settings:</strong><br><pre style='white-space:pre-wrap;'>" +
+            JSON.stringify(settings, null, 2) + "</pre>";
+
         }
 
         try {
@@ -237,6 +252,9 @@
               called = true;
               clearTimeout(timeout);
               console.log("[widget.js] Received widget settings:", settings);
+              Object.entries(settings).forEach(([key, value]) => {
+                console.log("  ", key, ":", value);
+              });
               if (!settings || Object.keys(settings).length === 0) {
                 settings = fallbackSettings;
                 console.warn("[widget.js] Using fallback settings for empty settings:", settings);
