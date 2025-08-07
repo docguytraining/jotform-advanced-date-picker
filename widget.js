@@ -1,64 +1,79 @@
 (function () {
+  console.log("[widget.js] Script starting");
+
   function waitFor(conditionFn, callback, interval = 50, timeout = 5000) {
     const start = Date.now();
     const check = () => {
       if (conditionFn()) {
+        console.log("[widget.js] Dependencies ready");
         callback();
       } else if (Date.now() - start < timeout) {
         setTimeout(check, interval);
       } else {
-        console.error("Timeout waiting for condition.");
+        console.error("[widget.js] Timeout waiting for dependencies");
       }
     };
     check();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    waitFor(() => typeof flatpickr === "function" && typeof JFCustomWidget === "object", function () {
-      JFCustomWidget.getWidgetSettings(function (settings) {
-        // Inject DOM
-        const calendarEl = document.createElement("div");
-        calendarEl.id = "calendar";
-        calendarEl.dataset.startDate = settings.startDate || "";
-        calendarEl.dataset.endDate = settings.endDate || "";
-        calendarEl.dataset.displayFormat = settings.displayFormat || "Y-m-d";
-        calendarEl.dataset.allowedWeekdays = settings.allowedWeekdays || "";
-        calendarEl.dataset.excludedDates = settings.excludedDates || "";
-        calendarEl.dataset.minSelectableDates = settings.minSelectableDates || "0";
-        calendarEl.dataset.maxSelectableDates = settings.maxSelectableDates || "999";
+    console.log("[widget.js] DOMContentLoaded");
 
-        const displayDiv = document.createElement("div");
-        displayDiv.id = "selectedDatesDisplay";
+    waitFor(
+      () => typeof flatpickr === "function" && typeof JFCustomWidget === "object",
+      function () {
+        console.log("[widget.js] flatpickr and JFCustomWidget are available");
 
-        const warningDiv = document.createElement("div");
-        warningDiv.id = "calendar-warning";
-        warningDiv.style.color = "red";
-        warningDiv.style.marginTop = "0.5em";
+        JFCustomWidget.getWidgetSettings(function (settings) {
+          console.log("[widget.js] Received widget settings:", settings);
 
-        const hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
-        hiddenInput.name = "selectedDates";
-        hiddenInput.id = "selectedDates";
+          const calendarEl = document.createElement("div");
+          calendarEl.id = "calendar";
+          calendarEl.dataset.startDate = settings.startDate || "";
+          calendarEl.dataset.endDate = settings.endDate || "";
+          calendarEl.dataset.displayFormat = settings.displayFormat || "Y-m-d";
+          calendarEl.dataset.allowedWeekdays = settings.allowedWeekdays || "";
+          calendarEl.dataset.excludedDates = settings.excludedDates || "";
+          calendarEl.dataset.minSelectableDates = settings.minSelectableDates || "0";
+          calendarEl.dataset.maxSelectableDates = settings.maxSelectableDates || "999";
 
-        document.body.appendChild(calendarEl);
-        document.body.appendChild(warningDiv);
-        document.body.appendChild(displayDiv);
-        document.body.appendChild(hiddenInput);
+          const displayDiv = document.createElement("div");
+          displayDiv.id = "selectedDatesDisplay";
 
-        // Inject the reusable script
-        const coreScript = document.createElement("script");
-        coreScript.src = "advanced-date-picker.js";
-        document.body.appendChild(coreScript);
-      });
+          const warningDiv = document.createElement("div");
+          warningDiv.id = "calendar-warning";
+          warningDiv.style.color = "red";
+          warningDiv.style.marginTop = "0.5em";
 
-      JFCustomWidget.subscribe("submit", function () {
-         console.log("ready message arrived from JotForm", msg);
-        const msg = {
-          valid: true,
-          value: document.getElementById("selectedDates")?.value || ""
-        };
-        JFCustomWidget.sendSubmit(msg);
-      });
-    });
+          const hiddenInput = document.createElement("input");
+          hiddenInput.type = "hidden";
+          hiddenInput.name = "selectedDates";
+          hiddenInput.id = "selectedDates";
+
+          document.body.appendChild(calendarEl);
+          document.body.appendChild(warningDiv);
+          document.body.appendChild(displayDiv);
+          document.body.appendChild(hiddenInput);
+
+          console.log("[widget.js] DOM elements injected");
+
+          const coreScript = document.createElement("script");
+          coreScript.src = "advanced-date-picker.js";
+          coreScript.onload = () => console.log("[widget.js] advanced-date-picker.js loaded");
+          coreScript.onerror = () => console.error("[widget.js] Failed to load advanced-date-picker.js");
+          document.body.appendChild(coreScript);
+        });
+
+        JFCustomWidget.subscribe("submit", function () {
+          console.log("[widget.js] Submit triggered");
+          const msg = {
+            valid: true,
+            value: document.getElementById("selectedDates")?.value || ""
+          };
+          console.log("[widget.js] Sending submit message:", msg);
+          JFCustomWidget.sendSubmit(msg);
+        });
+      }
+    );
   });
 })();

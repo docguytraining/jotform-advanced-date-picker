@@ -11,7 +11,11 @@
 
 // While this script was written to work with Jotform, it could also be useful for other projects as well, so we're only including code here that is core functionality. If it makes it work with Jotform, that code goes in widget.js. If it makes it work for the example webpage, that code goes in index-scripts.js
 
+console.log("[advanced-date-picker.js] Script loaded and running");
+
+
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("[advanced-date-picker.js] DOMContentLoaded fired");
     const calendarEl = document.getElementById("calendar");
     const selectedDisplay = document.getElementById("selectedDatesDisplay");
     const hiddenInput = document.getElementById("selectedDates") || createHiddenInput();
