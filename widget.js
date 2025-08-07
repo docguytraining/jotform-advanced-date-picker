@@ -211,10 +211,7 @@
         }
 
         try {
-          // Detect if running inside Jotform by checking for the parent window origin
-          const isJotform = window.parent !== window && document.referrer.includes("jotform");
           if (
-            isJotform &&
             typeof window.JFCustomWidget === "object" &&
             typeof JFCustomWidget.getWidgetSettings === "function"
           ) {
@@ -245,7 +242,7 @@
               minSelectableDates: "1",
               maxSelectableDates: "5"
             };
-            console.warn("[widget.js] No JFCustomWidget.getWidgetSettings or not in Jotform; using fallback settings:", settings);
+            console.warn("[widget.js] No JFCustomWidget.getWidgetSettings; using fallback settings:", settings);
             runWidget(settings);
           }
         } catch (e) {
