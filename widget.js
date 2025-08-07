@@ -216,19 +216,30 @@
             typeof JFCustomWidget.getWidgetSettings === "function"
           ) {
             console.log("[widget.js] Calling JFCustomWidget.getWidgetSettings...");
+            let called = false;
+            const fallbackSettings = {
+              startDate: "2025-08-01",
+              endDate: "2025-08-31",
+              displayFormat: "Y-m-d",
+              allowedWeekdays: "1,2,3,4,5",
+              excludedDates: "",
+              minSelectableDates: "1",
+              maxSelectableDates: "5"
+            };
+            const timeout = setTimeout(() => {
+              if (!called) {
+                console.warn("[widget.js] getWidgetSettings did not call back, using fallback settings:", fallbackSettings);
+                runWidget(fallbackSettings);
+              }
+            }, 3000);
+
             JFCustomWidget.getWidgetSettings(function (settings) {
+              called = true;
+              clearTimeout(timeout);
               console.log("[widget.js] Received widget settings:", settings);
               if (!settings || Object.keys(settings).length === 0) {
-                settings = {
-                  startDate: "2025-08-01",
-                  endDate: "2025-08-31",
-                  displayFormat: "Y-m-d",
-                  allowedWeekdays: "1,2,3,4,5",
-                  excludedDates: "",
-                  minSelectableDates: "1",
-                  maxSelectableDates: "5"
-                };
-                console.warn("[widget.js] Using fallback settings for local testing:", settings);
+                settings = fallbackSettings;
+                console.warn("[widget.js] Using fallback settings for empty settings:", settings);
               }
               runWidget(settings);
             });
