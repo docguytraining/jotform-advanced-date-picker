@@ -1,3 +1,16 @@
+/** 
+ * Advaned Date Picker
+ * Author: Paul Pehrson
+ * Version: 1.0.0 
+ * Source: https://github.com/docguytraining/jotform-advanced-date-picker
+ * Requires: Flatpicker v4 (https://cdn.jsdelivr.net/npm/flatpickr)
+ * License: MIT License (https://mit-license.org/)
+ * 
+ *  * To view a working version of this script, see https://docguytraining.github.io/jotform-advanced-date-picker/
+ **/
+
+// While this script was written to work with Jotform, it could also be useful for other projects as well, so we're only including code here that is core functionality. If it makes it work with Jotform, that code goes in widget.js. If it makes it work for the example webpage, that code goes in index-scripts.js
+
 document.addEventListener("DOMContentLoaded", function () {
     const calendarEl = document.getElementById("calendar");
     const selectedDisplay = document.getElementById("selectedDatesDisplay");

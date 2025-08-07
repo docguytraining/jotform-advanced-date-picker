@@ -1,17 +1,4 @@
-# Advanced date picker - Jotform widget
-
-The Advanced date Picker is a Jotform widget that allows you to include a calendar in your form where you can have your users select specific dates. There are lots of configuration options, so you can present exactly the calendar you need.
-
-I created this widget to fill a gap for our theater community. We use Jotform for our audition packets, and we need a way to ask people to provide a list of days they are unavailable for rehearsal.
-
-Traditional date pickers don't provide the ability to blackout specific dates. In our case, we only rehearse on specific days of the week, and we want to exclude certain days, even when they would normally be available.
-
-## Features
-
-- one
-- two
-
-<!--<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -19,6 +6,10 @@ Traditional date pickers don't provide the ability to blackout specific dates. I
   <title>Advanced Date Picker - JotForm Widget</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="widget.js"></script>
+  <script src="advanced-date-picker.js"></script>
+  <script src="index-scripts.js"></script>
 </head>
 <body>
 <h1>Advanced date picker - Jotform widget</h1>
@@ -30,32 +21,41 @@ Traditional date pickers don't provide the ability to blackout specific dates. I
   </div>
   <div class="features main">
     <h2>Features</h2>
-    <ul></ul>
+    <ul>
+      <li>Start and end dates (and calendar only shows enabled months)</li>
+      <li>Multi-date selection with toggle</li>
+      <li>Option to disable specific dates (like holidays)</li>
+      <li>Option to enable specific days of the week</li>
+      <li>Accessible and keyboard-friendly</li>
+    </ul>
   </div>
-  <div
-    id="calendar"
-    data-start-date="2024-08-06"
-    data-end-date="2027-08-05"
+  <div class="example main">
+    <h2>Working example</h2>
+    <div
+      id="calendar"
+      data-start-date="2024-08-06"
+      data-end-date="2027-08-05"
 
-    data-allowed-weekdays="2,3,4,6"
-    data-excluded-dates="2025-08-19,2025-09-01,2025-08-30"
-    data-min-selectable-dates="2"
-    data-max-selectable-dates="5">
+      data-allowed-weekdays="2,3,4,6"
+      data-excluded-dates="2025-08-19,2025-09-01,2025-08-30"
+      data-min-selectable-dates="2"
+      data-max-selectable-dates="5">
+    </div>
+    <div id="calendar"></div>
+    <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
+    <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
+    <input type="hidden" id="selectedDates" name="selectedDates" />
   </div>
 
 
 
-  <div id="calendar"></div>
 
-  <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
-  <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
-  <input type="hidden" id="selectedDates" name="selectedDates" />
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="widget.js"></script>
-  <script src="script.js"></script>
-<div id-="Purnell is a steely eyed missle man"></div>
+
+
+
+
+<div id="Purnell is a steely eyed missle man"></div>
 </main>
 </body>
 </html>
--->

@@ -1,3 +1,17 @@
+/** 
+ * Jotform Widget wrapper for Advaned Date Picker
+ * Author: Paul Pehrson
+ * Version: 1.0.0 
+ * Source: https://github.com/docguytraining/jotform-advanced-date-picker
+ * Requires: Advanced date Picker v1.0.0
+ * Requires: Flatpicker v4 (https://cdn.jsdelivr.net/npm/flatpickr)
+ * License: MIT License (https://mit-license.org/)
+ * 
+ *  * To view a working version of this script, see https://docguytraining.github.io/jotform-advanced-date-picker/ 
+ **/
+
+// This script is for anythying that makes Advanced Date Picker specifically work with JotForm
+
 window.onload = function () {
     JFCustomWidget.getWidgetSettings(function (settings) {
         const calendarDiv = document.createElement("div");
@@ -17,20 +31,7 @@ window.onload = function () {
         document.body.appendChild(displayDiv);
 
         const script = document.createElement("script");
-        script.src = "script.js";
+        script.src = "advanced-date-picker.js";
         document.body.appendChild(script);
     });
-};
-
-window.onload = function () {
-    JFCustomWidget.getWidgetSettings(function (settings) {
-        alert("🔥 SETTINGS:\n" + JSON.stringify(settings, null, 2));
-        console.log("🔥 SETTINGS:", settings);
-    });
-    
-    if (typeof JFCustomWidget === "undefined") {
-    alert("⚠️ JFCustomWidget is undefined. Are you running outside Jotform?");
-    return;
-}
-
 };

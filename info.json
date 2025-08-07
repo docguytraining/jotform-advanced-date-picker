@@ -5,20 +5,27 @@
   "author": "Paul Pehrson",
   "email": "paulpehrson@gmail.com",
   "license": "MIT",
-  "type": "iframe",
-  "width": "100%",
-  "height": "420px",
-  "assets": {
-    "js": [
-      "flatpickr.js",
-      "advanced-date-picker.js",
-      "widget.js"
-    ],
-    "css": [
-      "flatpickr.min.css",
-      "style.css"
-    ]
-  },
+  "included-scripts":[
+    {
+      "file":"advanced-date-picker.js",
+      "description":"Core script functionality that is reusable. Required"
+    },
+    {
+      "file":"index-scripts.js",
+      "description":"Used only to render on example page. Not Required except for example page"
+    },
+    {
+      "file":"widget.js",
+      "description":"Connects jotform to script. Required ONLY for Jotform integration"
+    }
+  ],
+  "requires": [
+    {
+      "name":"Flatpickr",
+      "version": "4",
+      "url":"https://cdn.jsdelivr.net/npm/flatpickr"
+    }
+  ],
   "settings": [
     {
       "name": "startDate",
