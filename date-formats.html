@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Date Format Cheat Sheet - Advanced Date Picker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+    h2 {
+      margin-top: 2rem;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 0.25rem;
+      color: #444;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+    code {
+      background-color: #f0f0f0;
+      padding: 0.1rem 0.25rem;
+      border-radius: 3px;
+      font-family: Consolas, monospace;
+    }
+    .example {
+      background-color: #fff;
+      border-left: 4px solid #4CAF50;
+      padding: 0.75rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Date Format Cheat Sheet</h1>
+  <p>This page lists the supported date format tokens for <strong>Advanced Date Picker</strong>. You can use these tokens to customize how dates appear in the widget and in stored data.</p>
+
+  <h2>Format Tokens</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Token</th>
+        <th>Description</th>
+        <th>Example Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Y</code></td><td>4-digit year</td><td>2025</td></tr>
+      <tr><td><code>y</code></td><td>2-digit year</td><td>25</td></tr>
+      <tr><td><code>m</code></td><td>Month number, zero-padded</td><td>08</td></tr>
+      <tr><td><code>n</code></td><td>Month number, no padding</td><td>8</td></tr>
+      <tr><td><code>M</code></td><td>Short month name</td><td>Aug</td></tr>
+      <tr><td><code>F</code></td><td>Full month name</td><td>August</td></tr>
+      <tr><td><code>d</code></td><td>Day of month, zero-padded</td><td>09</td></tr>
+      <tr><td><code>j</code></td><td>Day of month, no padding</td><td>9</td></tr>
+      <tr><td><code>D</code></td><td>Short weekday name</td><td>Tue</td></tr>
+      <tr><td><code>l</code></td><td>Full weekday name</td><td>Tuesday</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Examples</h2>
+  <div class="example">
+    <p><code>Y-m-d</code> → <strong>2025-08-19</strong></p>
+    <p><code>d M</code> → <strong>19 Aug</strong></p>
+    <p><code>D, M j</code> → <strong>Tue, Aug 19</strong></p>
+    <p><code>l, F j, Y</code> → <strong>Tuesday, August 19, 2025</strong></p>
+  </div>
+
+  <h2>Tips</h2>
+  <ul>
+    <li>Use <code>M</code> (uppercase) for month names, <code>m</code> (lowercase) for month numbers.</li>
+    <li>Mix and match tokens to create your preferred date display.</li>
+    <li>Separate tokens with spaces, commas, or dashes as needed.</li>
+  </ul>
+
+</body>
+</html>
