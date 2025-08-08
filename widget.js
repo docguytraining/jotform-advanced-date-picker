@@ -67,6 +67,33 @@
   return { options, checked: effective, numbers };
 }
 
+function rangeIsUnderOneYear(startISO, endISO) {
+  if (!startISO || !endISO) return false;
+  const start = parseISO(startISO);
+  const end = parseISO(endISO);
+  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+  return (end - start) < ONE_YEAR_MS;
+}
+
+// Strip year tokens from a flatpickr format string (Y or y) and tidy spaces/punctuation
+function stripYearTokens(fmt) {
+  if (!fmt) return 'M j';
+  let f = fmt.replace(/[Yy]+/g, '').replace(/\s*,\s*,/g, ',');   // remove year tokens
+  f = f.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();     // clean doubles / spaces
+  if (!/[MDjFlmnUd]/i.test(f)) f = 'M j';                         // fallback if empty-ish
+  return f;
+}
+
+function monthShortName(d) {
+  return window.flatpickr.formatDate(d, 'M'); // e.g., Aug
+}
+
+// Use either full format (with year) or a compact format (without year)
+function formatDateISOForUserCompact(iso, fullFmt, noYear) {
+  const d = parseISO(iso);
+  return window.flatpickr.formatDate(d, noYear || fullFmt);
+}
+
 
   function readSettingsFromEvent(data) {
     try {
@@ -245,17 +272,31 @@
     return window.flatpickr.formatDate(parseISO(iso), fmt);
   }
 
-  function formatRange(range, fmt) {
+  function formatRange(range, fullFmt, noYearFmt, useNoYear) {
     if (range.start === range.end) {
-      return formatDateISOForUser(range.start, fmt);
+      return formatDateISOForUserCompact(range.start, fullFmt, useNoYear ? noYearFmt : null);
     }
-    // Generic: respect the user’s displayFormat for both ends
-    return `${formatDateISOForUser(range.start, fmt)}–${formatDateISOForUser(range.end, fmt)}`;
+
+    if (useNoYear) {
+      // Compact: "Aug 19–20" if same month; otherwise "Aug 19–Sep 2"
+      const s = parseISO(range.start);
+      const e = parseISO(range.end);
+      const sameMonth = (s.getFullYear() === e.getFullYear()) && (s.getMonth() === e.getMonth());
+      if (sameMonth) {
+        // month once + day span
+        return `${monthShortName(s)} ${String(s.getDate())}–${String(e.getDate())}`;
+      }
+      // different months
+      return `${monthShortName(s)} ${s.getDate()}–${monthShortName(e)} ${e.getDate()}`;
+    }
+
+    // Fallback: respect user’s full display format on both ends
+    return `${formatDateISOForUser(range.start, fullFmt)}–${formatDateISOForUser(range.end, fullFmt)}`;
   }
 
-  function formatRangesList(ranges, fmt) {
+  function formatRangesList(ranges, fullFmt, noYearFmt, useNoYear) {
     if (!ranges.length) return 'No dates selected';
-    const parts = ranges.map(r => formatRange(r, fmt));
+    const parts = ranges.map(r => formatRange(r, fullFmt, noYearFmt, useNoYear));
     if (parts.length === 1) return parts[0];
     if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
     return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`;
@@ -266,13 +307,21 @@
     const out = els.value();
     const disp = els.display();
 
-    // Keep hidden value as a sorted JSON array of ISO dates
     const sortedISO = [...state.selected].sort();
     if (out) out.value = JSON.stringify(sortedISO);
 
-    // Group consecutive dates into ranges and format for the user
     const ranges = groupConsecutiveDates(sortedISO);
-    const nice = formatRangesList(ranges, state.fmt);
+
+    // Decide formatting mode based on configured range
+    const useNoYear = rangeIsUnderOneYear(
+      // These come from settings and were copied into state in runWidget
+      // If you didn’t copy them into state, pass settings.startDate/endDate instead
+      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.startDate) || null,
+      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.endDate) || null
+    );
+    const noYearFmt = stripYearTokens(state.fmt);
+
+    const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
 
     if (disp) {
       const count = sortedISO.length;
@@ -281,11 +330,11 @@
         : 'No dates selected';
     }
 
-    // Resize the iframe to fit the updated text
     if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
       JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
     }
   }
+
 
   function withinAllowedWeekday(date) {
     log('allowedWeekdays are:', state.allowedWeekdays);
@@ -456,17 +505,26 @@ function runWidget(settings) {
       return;
     }
 
+    window.__ADP_LAST_SETTINGS__ = settings;
     runWidget(settings);
   }
 
   function submitHandler() {
-    log('submit');
-    if (state.minCount && state.selected.length < state.minCount) {
-      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'} before submitting.`);
-      JFCustomWidget.sendSubmit({ valid: false, value: JSON.stringify(state.selected) });
-      return;
-    }
-    JFCustomWidget.sendSubmit({ valid: true, value: JSON.stringify(state.selected) });
+    const sortedISO = [...state.selected].sort();
+    const ranges = groupConsecutiveDates(sortedISO);
+
+    const useNoYear = rangeIsUnderOneYear(
+      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.startDate) || null,
+      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.endDate) || null
+    );
+    const noYearFmt = stripYearTokens(state.fmt);
+    const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
+
+    // Send formatted value to Jotform
+    JFCustomWidget.sendSubmit({
+      valid: true,
+      value: nice
+    });
   }
 
   // Subscribe if API is present now; otherwise, retry on DOM ready.
