@@ -19,30 +19,18 @@
   <!-- Load Jotform API early -->
   <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
 
-  <!-- Subscribe to Jotform events -->
-  <script>
-    JFCustomWidget.subscribe('ready', function (data) {
-      console.log('[widget] ready', data);
-    });
-
-    JFCustomWidget.subscribe('submit', function () {
-      console.log('[widget] submit');
-      JFCustomWidget.sendSubmit({ valid: true, value: 'demo value' });
-    });
-  </script>
-
   <!-- Other libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="widget.js"></script>
 </head>
 <body>
   <main>
-    <h1>Attempt 35</h1>
+    <h1>Attempt 40</h1>
     <div id="calendar"></div>
     <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
     <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
     <input type="hidden" id="selectedDates" name="selectedDates" />
-    <div id="ChatGPT-is-a-steely-eyed-missile-man-v1"></div>
+    <div id="ChatGPT-is-a-steely-eyed-missile-man"></div>
   </main>
 </body>
 </html>
