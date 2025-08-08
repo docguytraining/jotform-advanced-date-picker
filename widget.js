@@ -104,6 +104,23 @@
       allowedWeekdays,     // [0..6]
     };
   }
+  
+  function parseISO(iso) {
+    // "YYYY-MM-DD" -> Date (local)
+    const [y, m, d] = iso.split('-').map(Number);
+
+    return new Date(y, m - 1, d);
+  }
+
+  function countPossibleDays(startISO, endISO, allowedWeekdays) {
+    if (!startISO || !endISO || !allowedWeekdays || !allowedWeekdays.length) return null;
+    let count = 0;
+    for (let d = parseISO(startISO), end = parseISO(endISO); d <= end; d.setDate(d.getDate() + 1)) {
+      if (allowedWeekdays.includes(d.getDay())) count++;
+    }
+    
+    return count;
+  }
 
   function validateSettings(s) {
     const errors = [];
@@ -119,6 +136,17 @@
     if (s.minSelectableDates && s.maxSelectableDates && s.minSelectableDates > s.maxSelectableDates) {
       errors.push('Minimum selectable dates cannot be greater than maximum selectable dates.');
     }
+
+    const possible = countPossibleDays(s.startDate, s.endDate, s.allowedWeekdays);
+    if (possible !== null) {
+      if (s.minSelectableDates && s.minSelectableDates > possible) {
+        errors.push(`Minimum selectable dates (${s.minSelectableDates}) exceeds available dates in range (${possible}).`);
+      }
+      if (s.maxSelectableDates && s.maxSelectableDates > possible) {
+        errors.push(`Maximum selectable dates (${s.maxSelectableDates}) exceeds available dates in range (${possible}).`);
+      }
+    }
+
     return errors;
   }
 
@@ -348,7 +376,6 @@ function runWidget(settings) {
     JFCustomWidget.sendSubmit({ valid: true, value: JSON.stringify(state.selected) });
   }
 
-
   // Subscribe if API is present now; otherwise, retry on DOM ready.
   function wireJotform() {
     if (window.JFCustomWidget && JFCustomWidget.subscribe) {
@@ -377,3 +404,4 @@ function runWidget(settings) {
     runWidget,
   };
 })();
+
