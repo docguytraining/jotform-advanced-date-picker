@@ -52,19 +52,27 @@
       "hint": "Examples: Y-m-d (2025-08-19), d M (19 Aug), D, M j (Tue, Aug 19)"
     },
     {
-      "name": "allowedWeekdays",
+      "name": "allowedWeekday",
       "type": "checkbox-group",
       "label": "Allowed Days of the Week",
       "options": [
-        { "label": "Sunday", "value": "0" },
-        { "label": "Monday", "value": "1" },
-        { "label": "Tuesday", "value": "2" },
-        { "label": "Wednesday", "value": "3" },
-        { "label": "Thursday", "value": "4" },
-        { "label": "Friday", "value": "5" },
-        { "label": "Saturday", "value": "6" }
+        { "label": "Sunday", "value": "Sunday" },
+        { "label": "Monday", "value": "Monday" },
+        { "label": "Tuesday", "value": "Tuesday" },
+        { "label": "Wednesday", "value": "Wednesday" },
+        { "label": "Thursday", "value": "Thursday" },
+        { "label": "Friday", "value": "Friday" },
+        { "label": "Saturday", "value": "Saturday" }
       ],
-      "default": ["0", "1", "2", "3", "4", "5", "6"],
+      "default": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
       "hint": "Uncheck any days of the week you want to exclude from selection."
     },
     {

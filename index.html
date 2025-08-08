@@ -1,61 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced Date Picker - JotForm Widget</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="widget.js"></script>
-  <script src="advanced-date-picker.js"></script>
-  <script src="index-scripts.js"></script>
+  <meta charset="utf-8" />
+  <title>Advanced Date Picker – Standalone Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
+    fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 16px 0; }
+    legend { padding: 0 6px; color: #444; }
+    #calendar { margin: 8px 0 12px; }
+    #calendar-warning { color: #b00020; min-height: 1.2em; }
+    #selectedDatesDisplay { margin-top: 8px; font-weight: 500; }
+    code { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
+    .output { white-space: pre-wrap; background:#f6f8fa; padding:10px; border-radius:8px; }
+  </style>
 </head>
 <body>
-<h1>Advanced date picker - Jotform widget</h1>
-<main>
-  <div class="intro main">
-    <p>The Advanced date Picker is a Jotform widget that allows you to include a calendar in your form where you can have your users select specific dates. There are lots of configuration options, so you can present exactly the calendar you need.</p>
-    <p>I created this widget to fill a gap for our theater community. We use Jotform for our audition packets, and we need a way to ask people to provide a list of days they are unavailable for rehearsal.</p>
-    <p>Traditional date pickers don't provide the ability to blackout specific dates. In our case, we only rehearse on specific days of the week, and we want to exclude certain days, even when they would normally be available.</p>
-  </div>
-  <div class="features main">
-    <h2>Features</h2>
-    <ul>
-      <li>Start and end dates (and calendar only shows enabled months)</li>
-      <li>Multi-date selection with toggle</li>
-      <li>Option to disable specific dates (like holidays)</li>
-      <li>Option to enable specific days of the week</li>
-      <li>Accessible and keyboard-friendly</li>
-    </ul>
-  </div>
-  <div class="example main">
-    <h2>Working example</h2>
-    <div
-      id="calendar"
-      data-start-date="2024-08-06"
-      data-end-date="2027-08-05"
+  <h1>Advanced Date Picker – Standalone Demo</h1>
 
-      data-allowed-weekdays="2,3,4,6"
-      data-excluded-dates="2025-08-19,2025-09-01,2025-08-30"
-      data-min-selectable-dates="2"
-      data-max-selectable-dates="5">
+  <fieldset>
+    <legend>Config</legend>
+
+    <div class="row">
+      <label for="startDate">Start Date</label>
+      <input id="startDate" type="date" value="2025-08-15">
     </div>
-    <div id="calendar"></div>
-    <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
-    <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
-    <input type="hidden" id="selectedDates" name="selectedDates" />
+
+    <div class="row">
+      <label for="endDate">End Date</label>
+      <input id="endDate" type="date" value="2025-09-30">
+    </div>
+
+    <div class="row">
+      <label for="minSel">Min Selectable</label>
+      <input id="minSel" type="number" min="0" value="0" />
+    </div>
+
+    <div class="row">
+      <label for="maxSel">Max Selectable</label>
+      <input id="maxSel" type="number" min="0" value="10" />
+    </div>
+
+    <div class="row">
+      <label for="displayFmt">Display Format</label>
+      <input id="displayFmt" type="text" value="Y-m-d" />
+    </div>
+
+    <div class="row" style="align-items:start;">
+      <label>Allowed Weekdays</label>
+      <div>
+        <label><input type="checkbox" name="dow" value="Sunday" checked> Sunday</label>
+        <label><input type="checkbox" name="dow" value="Monday" checked> Monday</label>
+        <label><input type="checkbox" name="dow" value="Tuesday" checked> Tuesday</label>
+        <label><input type="checkbox" name="dow" value="Wednesday" checked> Wednesday</label>
+        <label><input type="checkbox" name="dow" value="Thursday" checked> Thursday</label>
+        <label><input type="checkbox" name="dow" value="Friday" checked> Friday</label>
+        <label><input type="checkbox" name="dow" value="Saturday" checked> Saturday</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="excluded">Excluded Dates</label>
+      <input id="excluded" type="text" placeholder="YYYY-MM-DD,YYYY-MM-DD" value="2025-08-24" />
+    </div>
+
+    <button id="applyBtn" type="button">Apply Settings</button>
+  </fieldset>
+
+  <h2>Calendar</h2>
+  <div id="calendar"></div>
+  <div id="calendar-warning"></div>
+  <div id="selectedDatesDisplay">No dates selected</div>
+  <input type="hidden" id="selectedDates" />
+
+  <h2>Outputs</h2>
+  <div class="output">
+    <div><strong>ISO array</strong>: <code id="isoOut">[]</code></div>
+    <div><strong>CSV (storage)</strong>: <code id="csvOut"></code></div>
+    <div><strong>Human summary</strong>: <code id="summaryOut"></code></div>
   </div>
 
+  <!-- flatpickr + core ADP -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="./advanced-date-picker.js"></script>
 
+  <script>
+    // --- UI elements ---
+    const els = {
+      cal: document.getElementById('calendar'),
+      warn: document.getElementById('calendar-warning'),
+      disp: document.getElementById('selectedDatesDisplay'),
+      hidden: document.getElementById('selectedDates'),
 
+      start: document.getElementById('startDate'),
+      end: document.getElementById('endDate'),
+      minSel: document.getElementById('minSel'),
+      maxSel: document.getElementById('maxSel'),
+      fmt: document.getElementById('displayFmt'),
+      excluded: document.getElementById('excluded'),
+      apply: document.getElementById('applyBtn'),
 
+      isoOut: document.getElementById('isoOut'),
+      csvOut: document.getElementById('csvOut'),
+      summaryOut: document.getElementById('summaryOut'),
+    };
 
+    // Collect allowed weekdays from checkboxes (names)
+    function getAllowedWeekday() {
+      return Array.from(document.querySelectorAll('input[name="dow"]:checked'))
+        .map(cb => cb.value);
+    }
 
+    // Create the core picker
+    let adp = new window.AdvancedDatePicker(els.cal, {
+      startDate: els.start.value,
+      endDate: els.end.value,
+      minSelectableDates: Number(els.minSel.value) || 0,
+      maxSelectableDates: Number(els.maxSel.value) || 0,
+      displayFormat: els.fmt.value.trim() || 'Y-m-d',
+      allowedWeekday: getAllowedWeekday(),
+      excludedDates: els.excluded.value, // CSV ISO
+      onWarning: (msg) => { els.warn.textContent = msg || ''; },
+      onChange: () => updateOutputs(),
+      onReady: () => updateOutputs(),
+    });
 
+    function updateOutputs() {
+      const iso = adp.getISO();
+      const csv = adp.getFormattedCSV();
+      const summary = adp.getHumanSummary(els.start.value, els.end.value);
 
+      els.hidden.value = JSON.stringify(iso);
+      els.disp.textContent = iso.length
+        ? `${iso.length} date${iso.length === 1 ? '' : 's'} selected: ${summary}`
+        : 'No dates selected';
 
-<div id="Purnell is a steely eyed missle man"></div>
-</main>
+      els.isoOut.textContent = JSON.stringify(iso);
+      els.csvOut.textContent = csv;
+      els.summaryOut.textContent = summary;
+    }
+
+    // Apply settings button -> reconfigure core picker
+    els.apply.addEventListener('click', () => {
+      adp.setOptions({
+        startDate: els.start.value,
+        endDate: els.end.value,
+        minSelectableDates: Number(els.minSel.value) || 0,
+        maxSelectableDates: Number(els.maxSel.value) || 0,
+        displayFormat: els.fmt.value.trim() || 'Y-m-d',
+        allowedWeekday: getAllowedWeekday(),
+        excludedDates: els.excluded.value, // CSV ISO
+      });
+      // setOptions() re-inits and triggers onReady->updateOutputs()
+    });
+  </script>
 </body>
 </html>
