@@ -10,12 +10,37 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="widget.js"></script>
 </head>
+<script>
+(function () {
+  // 1) Load the API from HTTPS (never protocol-relative, never file://)
+  var s = document.createElement('script');
+  s.src = 'https://js.jotform.com/JotFormCustomWidget.min.js';
+  s.onload = function () {
+    console.log('[widget] API loaded');
+
+    // 2) Subscribe to events immediately on load
+    JFCustomWidget.subscribe('ready', function (data) {
+      console.log('[widget] ready', data);
+      // TODO: read settings, init UI
+      // const settings = JFCustomWidget.getWidgetSettings() || {};
+    });
+
+    JFCustomWidget.subscribe('submit', function () {
+      console.log('[widget] submit');
+      // TODO: replace getValue() with your value getter
+      JFCustomWidget.sendSubmit({ valid: true, value: JSON.stringify(getValue()) });
+    });
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <body>
+
   <main>
 <!--
 This page is just for rendering in Jotform, so it expecting Jotform to provide the values to make the calendar render. That code comes from widget.js and passes the info to advanced-date-picker.js     
 -->
-<h1>Attempt 33</h1>
+<h1>Attempt 34</h1>
   <div id="calendar"></div>
 
   <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
