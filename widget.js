@@ -256,61 +256,77 @@
           console.log("Available methods:", Object.keys(window.JFCustomWidget || {}));
         }
 
-        try {
-          if (
-            typeof window.JFCustomWidget === "object" &&
-            typeof JFCustomWidget.getWidgetSettings === "function"
-          ) {
-            console.log("[widget.js] Calling JFCustomWidget.getWidgetSettings...");
-            let called = false;
-            const fallbackSettings = {
-              startDate: "2025-08-01",
-              endDate: "2025-08-31",
-              displayFormat: "Y-m-d",
-              allowedWeekdays: "1,2,3,4,5",
-              excludedDates: "",
-              minSelectableDates: "1",
-              maxSelectableDates: "5"
-            };
-            const timeout = setTimeout(() => {
-              if (!called) {
-                console.warn("[widget.js] getWidgetSettings did not call back, using fallback settings:", fallbackSettings);
-                runWidget(fallbackSettings);
-              }
-            }, 1000); // Reduced timeout to 1 second
+       // Replace your JFCustomWidget.getWidgetSettings block with this:
 
-            JFCustomWidget.getWidgetSettings(function (settings) {
-              called = true;
-              clearTimeout(timeout);
-              console.log("[widget.js] SUCCESS: Received widget settings:", settings);
-              Object.entries(settings).forEach(([key, value]) => {
-                console.log("  ", key, ":", value);
-              });
-              if (!settings || Object.keys(settings).length === 0) {
-                settings = fallbackSettings;
-                console.warn("[widget.js] Using fallback settings for empty settings:", settings);
-                runWidget(settings, false); // fallback, don't show table
-              } else {
-                runWidget(settings, true); // from Jotform, show table
-              }
-            });
-          } else {
-            // Local testing: always use fallback settings
-            const settings = {
-              startDate: "2025-08-01",
-              endDate: "2025-08-31",
-              displayFormat: "Y-m-d",
-              allowedWeekdays: "1,2,3,4,5",
-              excludedDates: "",
-              minSelectableDates: "1",
-              maxSelectableDates: "5"
-            };
-            console.warn("[widget.js] No JFCustomWidget.getWidgetSettings; using fallback settings:", settings);
-            runWidget(settings);
-          }
-        } catch (e) {
-          console.error("[widget.js] Exception in getWidgetSettings block:", e);
+try {
+  if (typeof window.JFCustomWidget === "object") {
+    console.log("[widget.js] JFCustomWidget detected");
+    
+    // Method 1: Direct property access (some widgets work this way)
+    if (window.JFCustomWidget.settings) {
+      console.log("[widget.js] Found settings directly:", window.JFCustomWidget.settings);
+      runWidget(window.JFCustomWidget.settings, true);
+    }
+    // Method 2: Try getWidgetSetting (singular, not plural)
+    else if (typeof JFCustomWidget.getWidgetSetting === "function") {
+      console.log("[widget.js] Trying getWidgetSetting (singular)");
+      const settings = {
+        startDate: JFCustomWidget.getWidgetSetting('startDate'),
+        endDate: JFCustomWidget.getWidgetSetting('endDate'),
+        minSelectableDates: JFCustomWidget.getWidgetSetting('minSelectableDates'),
+        maxSelectableDates: JFCustomWidget.getWidgetSetting('maxSelectableDates'),
+        displayFormat: JFCustomWidget.getWidgetSetting('displayFormat'),
+        allowedWeekdays: JFCustomWidget.getWidgetSetting('allowedWeekdays'),
+        excludedDates: JFCustomWidget.getWidgetSetting('excludedDates')
+      };
+      console.log("[widget.js] Retrieved individual settings:", settings);
+      runWidget(settings, true);
+    }
+    // Method 3: Your original method with timeout
+    else if (typeof JFCustomWidget.getWidgetSettings === "function") {
+      console.log("[widget.js] Calling JFCustomWidget.getWidgetSettings...");
+      
+      let called = false;
+      const fallbackSettings = {
+        startDate: "2025-08-01",
+        endDate: "2025-08-31",
+        displayFormat: "Y-m-d",
+        allowedWeekdays: "1,2,3,4,5",
+        excludedDates: "",
+        minSelectableDates: "1",
+        maxSelectableDates: "5"
+      };
+      
+      const timeout = setTimeout(() => {
+        if (!called) {
+          console.warn("[widget.js] getWidgetSettings timeout, using fallback");
+          runWidget(fallbackSettings);
         }
+      }, 1000); // Reduced timeout to 1 second
+      
+      JFCustomWidget.getWidgetSettings(function (settings) {
+        called = true;
+        clearTimeout(timeout);
+        console.log("[widget.js] SUCCESS: Received settings:", settings);
+        runWidget(settings || fallbackSettings, true);
+      });
+    }
+  } else {
+    // Local testing fallback
+    console.warn("[widget.js] No JFCustomWidget, using local fallback");
+    runWidget({
+      startDate: "2025-08-01",
+      endDate: "2025-08-31",
+      displayFormat: "Y-m-d",
+      allowedWeekdays: "1,2,3,4,5",
+      excludedDates: "",
+      minSelectableDates: "1",
+      maxSelectableDates: "5"
+    });
+  }
+} catch (e) {
+  console.error("[widget.js] Exception:", e);
+}
 
         // Only subscribe if JFCustomWidget exists
         if (typeof window.JFCustomWidget === "object" && typeof JFCustomWidget.subscribe === "function") {
