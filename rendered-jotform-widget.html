@@ -4,63 +4,45 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Advanced Date Picker</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="style.css" />
-  <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="widget.js"></script>
-</head>
-<script>
-(function () {
-  // 1) Load the API from HTTPS (never protocol-relative, never file://)
-  var s = document.createElement('script');
-  s.src = 'https://js.jotform.com/JotFormCustomWidget.min.js';
-  s.onload = function () {
-    console.log('[widget] API loaded');
 
-    // 2) Subscribe to events immediately on load
+  <!-- Logger: runs immediately -->
+  <script>
+    console.log('[widget] boot', Date.now());
+    window.addEventListener('message', (e) => {
+      console.log('[postMessage]', e.origin, e.data);
+    });
+  </script>
+
+  <!-- Load Jotform API early -->
+  <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
+
+  <!-- Subscribe to Jotform events -->
+  <script>
     JFCustomWidget.subscribe('ready', function (data) {
       console.log('[widget] ready', data);
-      // TODO: read settings, init UI
-      // const settings = JFCustomWidget.getWidgetSettings() || {};
     });
 
     JFCustomWidget.subscribe('submit', function () {
       console.log('[widget] submit');
-      // TODO: replace getValue() with your value getter
-      JFCustomWidget.sendSubmit({ valid: true, value: JSON.stringify(getValue()) });
+      JFCustomWidget.sendSubmit({ valid: true, value: 'demo value' });
     });
-  };
-  document.head.appendChild(s);
-})();
-</script>
+  </script>
+
+  <!-- Other libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="widget.js"></script>
+</head>
 <body>
-
   <main>
-<!--
-This page is just for rendering in Jotform, so it expecting Jotform to provide the values to make the calendar render. That code comes from widget.js and passes the info to advanced-date-picker.js     
--->
-<h1>Attempt 34</h1>
-  <div id="calendar"></div>
-
-  <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
-  <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
-  <input type="hidden" id="selectedDates" name="selectedDates" />
-
-<div id="ChatGPT is a steely eyed missile man. v1"></div>
-</main>
+    <h1>Attempt 35</h1>
+    <div id="calendar"></div>
+    <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
+    <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
+    <input type="hidden" id="selectedDates" name="selectedDates" />
+    <div id="ChatGPT-is-a-steely-eyed-missile-man-v1"></div>
+  </main>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
