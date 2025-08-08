@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Date Picker - Custom CSS Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            max-width: 900px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .example {
+            background-color: #fff8e1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Custom CSS for Advanced Date Picker (Jotform Widget)</h1>
+
+<p>
+You can customize the look and feel of the <strong>Advanced Date Picker</strong> widget by adding CSS rules in Jotform’s
+<strong>Custom CSS</strong> panel. Below are the available CSS classes you can target to style different parts of the calendar.
+</p>
+
+<h2>Available CSS Classes</h2>
+
+<ul>
+    <li><code>.flatpickr-day.flatpickr-disabled</code> – Disabled days that cannot be selected.</li>
+    <li><code>.flatpickr-day.selected</code> – Days that have been selected by the user.</li>
+    <li><code>.flatpickr-day</code> – Normal, selectable days.</li>
+    <li><code>.flatpickr-day:hover</code> – Days when hovered over by the mouse.</li>
+    <li><code>.flatpickr-days</code> – Background for the calendar day grid.</li>
+    <li><code>.flatpickr-months</code> – Background for the month and year row.</li>
+    <li><code>.flatpickr-weekdays</code> – Background for the weekday name row.</li>
+</ul>
+
+<h2>Example Custom CSS</h2>
+
+<pre><code>/* Disabled days */
+.flatpickr-day.flatpickr-disabled {
+    background-color: white;
+    color: #9f9f9f;
+    cursor: not-allowed;
+}
+
+/* Selected days */
+.flatpickr-day.selected {
+    color: white;
+    background-color: black;
+}
+
+/* Normal days */
+.flatpickr-day {
+    background-color: yellow;
+    color: orange;
+}
+
+/* Hover effect for selectable days */
+.flatpickr-day:hover {
+    background-color: orange;
+    border: 2px solid olive;
+}
+
+/* Calendar day grid background */
+.flatpickr-days {
+    background-color: #fafafa;
+}
+
+/* Month and year row background */
+.flatpickr-months {
+    background-color: #f0f0f0;
+}
+
+/* Weekday row background */
+.flatpickr-weekdays {
+    background-color: #f9f9f9;
+}
+</code></pre>
+
+<h2>How to Apply in Jotform</h2>
+<ol>
+    <li>Edit your Jotform form that contains the Advanced Date Picker widget.</li>
+    <li>Click the widget field and select the <strong>Widget Settings</strong> icon (gear).</li>
+    <li>Go to the <strong>Custom CSS</strong> tab.</li>
+    <li>Paste your CSS code into the panel.</li>
+    <li>Save and preview your form to see the changes.</li>
+</ol>
+
+<div class="example">
+    <strong>Tip:</strong> Test your changes using a few different months and selected dates to ensure colors and styles are applied consistently.
+</div>
+
+</body>
+</html>
