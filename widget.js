@@ -202,7 +202,7 @@
     };
   }
 
-  function onChangeHandler(selectedDates, /*dateStr*/, /*instance*/) {
+  function onChangeHandler(selectedDates, /*dateStr, instance*/) {
     // Build canonical ISO list
     state.selected = selectedDates.map(toISO);
 
