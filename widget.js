@@ -39,61 +39,59 @@
   ]);
 
   function parseAllowedWeekday(raw) {
-  if (!raw) return { options: [], checked: [], numbers: [] };
+    if (!raw) return { options: [], checked: [], numbers: [] };
 
-  // Find the first comma; left side = options (newlines), right side = checked (commas)
-  const firstComma = raw.indexOf(',');
-  const optionsPart = firstComma === -1 ? raw : raw.slice(0, firstComma);
-  const checkedPart = firstComma === -1 ? ''  : raw.slice(firstComma + 1);
+    // Find the first comma; left side = options (newlines), right side = checked (commas)
+    const firstComma = raw.indexOf(',');
+    const optionsPart = firstComma === -1 ? raw : raw.slice(0, firstComma);
+    const checkedPart = firstComma === -1 ? ''  : raw.slice(firstComma + 1);
 
-  const options = optionsPart
-    .split(/\r?\n+/)
-    .map(s => s.trim())
-    .filter(Boolean);
+    const options = optionsPart
+      .split(/\r?\n+/)
+      .map(s => s.trim())
+      .filter(Boolean);
 
-  const checked = checkedPart
-    .split(/\s*,\s*/)
-    .map(s => s.trim())
-    .filter(Boolean);
+    const checked = checkedPart
+      .split(/\s*,\s*/)
+      .map(s => s.trim())
+      .filter(Boolean);
 
-  const effective = checked.length ? checked : options;
+    const effective = checked.length ? checked : options;
+    const toKey = s => (s.includes('|') ? s.split('|').pop() : s).trim().toLowerCase();
 
-  const toKey = s => (s.includes('|') ? s.split('|').pop() : s).trim().toLowerCase();
+    const numbers = Array.from(new Set(
+      effective.map(toKey).map(k => DAY_MAP.get(k)).filter(Number.isInteger)
+    )).sort((a, b) => a - b);
 
-  const numbers = Array.from(new Set(
-    effective.map(toKey).map(k => DAY_MAP.get(k)).filter(Number.isInteger)
-  )).sort((a, b) => a - b);
+    return { options, checked: effective, numbers };
+  }
 
-  return { options, checked: effective, numbers };
-}
+  function rangeIsUnderOneYear(startISO, endISO) {
+    if (!startISO || !endISO) return false;
+    const start = parseISO(startISO);
+    const end = parseISO(endISO);
+    const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+    return (end - start) < ONE_YEAR_MS;
+  }
 
-function rangeIsUnderOneYear(startISO, endISO) {
-  if (!startISO || !endISO) return false;
-  const start = parseISO(startISO);
-  const end = parseISO(endISO);
-  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-  return (end - start) < ONE_YEAR_MS;
-}
+  // Strip year tokens from a flatpickr format string (Y or y) and tidy spaces/punctuation
+  function stripYearTokens(fmt) {
+    if (!fmt) return 'M j';
+    let f = fmt.replace(/[Yy]+/g, '').replace(/\s*,\s*,/g, ','); // remove year tokens
+    f = f.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();   // clean doubles / spaces
+    if (!/[MDjFlmnUd]/i.test(f)) f = 'M j';                       // fallback if empty-ish
+    return f;
+  }
 
-// Strip year tokens from a flatpickr format string (Y or y) and tidy spaces/punctuation
-function stripYearTokens(fmt) {
-  if (!fmt) return 'M j';
-  let f = fmt.replace(/[Yy]+/g, '').replace(/\s*,\s*,/g, ',');   // remove year tokens
-  f = f.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();     // clean doubles / spaces
-  if (!/[MDjFlmnUd]/i.test(f)) f = 'M j';                         // fallback if empty-ish
-  return f;
-}
+  function monthShortName(d) {
+    return window.flatpickr.formatDate(d, 'M'); // e.g., Aug
+  }
 
-function monthShortName(d) {
-  return window.flatpickr.formatDate(d, 'M'); // e.g., Aug
-}
-
-// Use either full format (with year) or a compact format (without year)
-function formatDateISOForUserCompact(iso, fullFmt, noYear) {
-  const d = parseISO(iso);
-  return window.flatpickr.formatDate(d, noYear || fullFmt);
-}
-
+  // Use either full format (with year) or a compact format (without year)
+  function formatDateISOForUserCompact(iso, fullFmt, noYear) {
+    const d = parseISO(iso);
+    return window.flatpickr.formatDate(d, noYear || fullFmt);
+  }
 
   function readSettingsFromEvent(data) {
     try {
@@ -109,6 +107,15 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     const api = (window.JFCustomWidget && JFCustomWidget.getWidgetSettings && JFCustomWidget.getWidgetSettings()) || {};
     if (api && Object.keys(api).length) return api;
     return readSettingsFromEvent(data);
+  }
+
+  function parseExcludedDates(raw) {
+    if (!raw) return [];
+    return Array.from(new Set(
+      raw.split(/\s*,\s*/).map(s => s.trim())
+        .filter(Boolean)
+        .filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)) // keep only ISO YYYY-MM-DD
+    ));
   }
 
   function normalizeSettings(raw) {
@@ -133,19 +140,9 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     };
   }
 
-  function parseExcludedDates(raw) {
-    if (!raw) return [];
-    return Array.from(new Set(
-      raw.split(/\s*,\s*/).map(s => s.trim())
-        .filter(Boolean)
-        .filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)) // keep only ISO YYYY-MM-DD
-    ));
-  }
-
   function parseISO(iso) {
     // "YYYY-MM-DD" -> Date (local)
     const [y, m, d] = iso.split('-').map(Number);
-
     return new Date(y, m - 1, d);
   }
 
@@ -165,7 +162,6 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     }
     return count;
   }
-
 
   function validateSettings(s) {
     const errors = [];
@@ -201,6 +197,46 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     return errors;
   }
 
+  // -------------------- storage using designer's display format (but parse-safe) --------------------
+  function makeStorageFormat(displayFmt) {
+    let f = (displayFmt || 'Y-m-d').trim();
+
+    // Remove weekday tokens (D = short weekday, l = long weekday)
+    f = f.replace(/[Dl]/g, '').replace(/\s{2,}/g, ' ').trim();
+
+    // Replace month name tokens with numeric month for unambiguous storage
+    f = f.replace(/[FM]/g, 'm');
+
+    // Ensure there is a year token; normalize to full 'Y'
+    if (!/[Yy]/.test(f)) {
+      f = (f.length && /\w$/.test(f)) ? (f + ' Y') : (f + 'Y');
+    } else {
+      f = f.replace(/y/g, 'Y');
+    }
+
+    if (!f.replace(/[^A-Za-z]/g, '').length) f = 'Y-m-d';
+    return f;
+  }
+
+  function isoArrayToStorageCSV(isoArr, storageFmtOrDisplayFmt) {
+    const fmt = makeStorageFormat(storageFmtOrDisplayFmt);
+    return (isoArr || [])
+      .map(s => window.flatpickr.formatDate(parseISO(s), fmt))
+      .join(', ');
+  }
+
+  function storageCSVToISOArray(str, storageFmtOrDisplayFmt) {
+    if (!str || typeof str !== 'string') return [];
+    const fmt = makeStorageFormat(storageFmtOrDisplayFmt);
+
+    const out = [];
+    for (const token of str.split(/\s*,\s*/).filter(Boolean)) {
+      const d = window.flatpickr.parseDate(token, fmt);
+      if (d && !isNaN(d)) out.push(toISO(d));
+    }
+    return Array.from(new Set(out)).sort();
+  }
+
   // -------------------- calendar runtime --------------------
   let fp = null;
   let state = {
@@ -228,14 +264,13 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
   function areConsecutive(prevISO, nextISO) {
     const prev = parseISO(prevISO);
     const next = parseISO(nextISO);
-    // difference of exactly 1 day (handles month/year rollovers)
     const oneDay = 24 * 60 * 60 * 1000;
     return (next - prev) === oneDay;
   }
 
   function groupConsecutiveDates(datesISO) {
     if (!datesISO || !datesISO.length) return [];
-    const sorted = [...new Set(datesISO)].sort(); // unique + sort (ISO sorts lexicographically by date)
+    const sorted = [...new Set(datesISO)].sort();
     const groups = [];
     let start = sorted[0];
     let prev = sorted[0];
@@ -243,23 +278,18 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     for (let i = 1; i < sorted.length; i++) {
       const cur = sorted[i];
       if (areConsecutive(prev, cur)) {
-        // keep extending the current group
         prev = cur;
         continue;
       }
-      // close current group
       groups.push({ start, end: prev });
-      // start a new group
       start = cur;
       prev = cur;
     }
-    // close the final group
     groups.push({ start, end: prev });
     return groups; // [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}, ...]
   }
 
   function formatDateISOForUser(iso, fmt) {
-    // flatpickr is already loaded
     return window.flatpickr.formatDate(parseISO(iso), fmt);
   }
 
@@ -274,15 +304,12 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
       const e = parseISO(range.end);
       const sameMonth = (s.getFullYear() === e.getFullYear()) && (s.getMonth() === e.getMonth());
       if (sameMonth) {
-        // month once + day span
-        return `${monthShortName(s)} ${String(s.getDate())}–${String(e.getDate())}`;
+        return `${monthShortName(s)} ${String(s.getDate())}\u2013${String(e.getDate())}`;
       }
-      // different months
-      return `${monthShortName(s)} ${s.getDate()}–${monthShortName(e)} ${e.getDate()}`;
+      return `${monthShortName(s)} ${s.getDate()}\u2013${monthShortName(e)} ${e.getDate()}`;
     }
 
-    // Fallback: respect user’s full display format on both ends
-    return `${formatDateISOForUser(range.start, fullFmt)}–${formatDateISOForUser(range.end, fullFmt)}`;
+    return `${formatDateISOForUser(range.start, fullFmt)}\u2013${formatDateISOForUser(range.end, fullFmt)}`;
   }
 
   function formatRangesList(ranges, fullFmt, noYearFmt, useNoYear) {
@@ -293,7 +320,6 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`;
   }
 
-
   function updateValueAndDisplay() {
     const out = els.value();
     const disp = els.display();
@@ -303,14 +329,12 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
 
     const ranges = groupConsecutiveDates(sortedISO);
 
-    // Decide formatting mode based on configured range
+    // Decide formatting mode for on-screen display
     const useNoYear = rangeIsUnderOneYear(
       window.__ADP_LAST_SETTINGS__?.startDate,
       window.__ADP_LAST_SETTINGS__?.endDate
     );
-
     const noYearFmt = stripYearTokens(state.fmt);
-
     const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
 
     if (disp) {
@@ -323,21 +347,6 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
       JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
     }
-  }
-
-
-  function withinAllowedWeekday(date) {
-    const dow = date.getDay(); // 0..6 (Sun..Sat)
-    return state.allowedWeekdays.includes(dow);
-  }
-
-  function disableIfMaxReached(date) {
-    if (!state.maxCount || state.selected.length < state.maxCount) return false;
-    // Allow clicking already-selected dates to unselect
-    const iso = toISO(date);
-    if (state.selected.includes(iso)) return false;
-    // Otherwise block adding more
-    return true;
   }
 
   function makeEnableFn(minISO, maxISO) {
@@ -357,43 +366,50 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     };
   }
 
-
   function onChangeHandler(selectedDates /*, dateStr, instance */) {
-  const before = state.selected.slice(); // previous ISO list
+    const before = state.selected.slice(); // previous ISO list
 
-  // Normalize to ISO list
-  let iso = (Array.isArray(selectedDates) ? selectedDates : [])
-    .filter(Boolean)
-    .map(d => (d instanceof Date ? d : new Date(d)))
-    .filter(d => !isNaN(d))
-    .map(toISO);
+    // Normalize to ISO list
+    let iso = (Array.isArray(selectedDates) ? selectedDates : [])
+      .filter(Boolean)
+      .map(d => (d instanceof Date ? d : new Date(d)))
+      .filter(d => !isNaN(d))
+      .map(toISO);
 
-  // Hard-block going over max: revert and warn
-  if (state.maxCount && iso.length > state.maxCount) {
-    setWarning(`You can select up to ${state.maxCount} date${state.maxCount === 1 ? '' : 's'}.`);
-    fp?.setDate?.(before, false);
-    state.selected = before;
+    // Hard-block going over max: revert and warn
+    if (state.maxCount && iso.length > state.maxCount) {
+      setWarning(`You can select up to ${state.maxCount} date${state.maxCount === 1 ? '' : 's'}.`);
+      fp?.setDate?.(before, false);
+      state.selected = before;
+      updateValueAndDisplay();
+      fp?.redraw?.();
+      return;
+    }
+
+    state.selected = iso;
+
+    // Min warning (do not block here; block on submit)
+    if (state.minCount && state.selected.length < state.minCount) {
+      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
+    } else {
+      setWarning('');
+    }
+
     updateValueAndDisplay();
-    fp?.redraw?.();            // ← re-evaluate enable() for each cell
-    return;
+
+    // Auto-save current value (Tables/editor contexts use sendData)
+    try {
+      const storageStr = isoArrayToStorageCSV([...state.selected].sort(), state.fmt);
+      JFCustomWidget?.sendData?.({ value: storageStr });
+    } catch (e) {
+      warn('sendData failed', e);
+    }
+
+    fp?.redraw?.();
   }
-
-  state.selected = iso;
-
-  // Min warning (don’t block here; block on submit if you want)
-  if (state.minCount && state.selected.length < state.minCount) {
-    setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
-  } else {
-    setWarning('');
-  }
-
-  updateValueAndDisplay();
-  fp?.redraw?.();              // ← re-evaluate enable() after each change
-}
-
 
   function onDayCreateHandler(_dObj, _dStr, _fp, dayElem) {
-    // When max is reached, add a disabled style for non-selected days
+    // Visual aid when max is reached (optional to keep)
     if (state.maxCount && state.selected.length >= state.maxCount) {
       const date = dayElem.dateObj;
       const iso = toISO(date);
@@ -404,67 +420,66 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     }
   }
 
-function runWidget(settings) {
-  log('runWidget', settings);
-  const calEl = document.getElementById('calendar');
-  if (!calEl) {
-    error('Calendar element not found');
-    return;
+  function runWidget(settings) {
+    log('runWidget', settings);
+    const calEl = document.getElementById('calendar');
+    if (!calEl) {
+      error('Calendar element not found');
+      return;
+    }
+
+    // COPY settings into state so filters have the right values
+    state.fmt = settings.displayFormat || 'Y-m-d';
+    state.minCount = settings.minSelectableDates || 0;
+    state.maxCount = settings.maxSelectableDates || 0;
+    state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
+      ? settings.allowedWeekdays
+      : [0,1,2,3,4,5,6];
+    state.excluded = new Set(settings.excludedDates || []);
+
+    const minISO = settings.startDate || null;
+    const maxISO = settings.endDate || null;
+
+    if (fp && fp.destroy) { try { fp.destroy(); } catch {} fp = null; }
+
+    const opts = {
+      mode: 'multiple',
+      inline: true,
+      clickOpens: false,
+      allowInput: false,
+      disableMobile: true,
+
+      dateFormat: 'Y-m-d',
+      altInput: false,
+      altFormat: state.fmt,
+
+      minDate: minISO,
+      maxDate: maxISO,
+      enable: [ makeEnableFn(minISO, maxISO) ], // uses state.allowedWeekdays + state.maxCount
+
+      onChange: onChangeHandler,
+      onDayCreate: onDayCreateHandler,
+      onReady() {
+        updateValueAndDisplay();
+        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+      },
+      onMonthChange() {
+        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+      },
+      onYearChange() {
+        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+      },
+    };
+
+    if (!window.flatpickr) {
+      error('flatpickr is not available');
+      setWarning('Calendar library failed to load.');
+      return;
+    }
+
+    fp = window.flatpickr(calEl, opts);
+    log('flatpickr created');
   }
-
-  // COPY settings into state so filters have the right values
-  state.fmt = settings.displayFormat || 'Y-m-d';
-  state.minCount = settings.minSelectableDates || 0;
-  state.maxCount = settings.maxSelectableDates || 0;
-  state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
-    ? settings.allowedWeekdays
-    : [0,1,2,3,4,5,6];
-  state.excluded = new Set(settings.excludedDates || []);
-
-  const minISO = settings.startDate || null;
-  const maxISO = settings.endDate || null;
-
-  if (fp && fp.destroy) { try { fp.destroy(); } catch {} fp = null; }
-
-  const opts = {
-    mode: 'multiple',
-    inline: true,
-    clickOpens: false,
-    allowInput: false,
-    disableMobile: true,
-
-    dateFormat: 'Y-m-d',
-    altInput: false,
-    altFormat: state.fmt,
-
-    minDate: minISO,
-    maxDate: maxISO,
-    enable: [ makeEnableFn(minISO, maxISO) ], // uses state.allowedWeekdays + state.maxCount
-
-    onChange: onChangeHandler,
-    onDayCreate: onDayCreateHandler,
-    onReady() {
-      updateValueAndDisplay();
-      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
-    },
-    onMonthChange() {
-      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
-    },
-    onYearChange() {
-      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
-    },
-  };
-
-  if (!window.flatpickr) {
-    error('flatpickr is not available');
-    setWarning('Calendar library failed to load.');
-    return;
-  }
-
-  fp = window.flatpickr(calEl, opts);
-  log('flatpickr created');
-}
-
 
   // -------------------- Jotform lifecycle --------------------
   function readyHandler(data) {
@@ -486,12 +501,35 @@ function runWidget(settings) {
     }
 
     window.__ADP_LAST_SETTINGS__ = settings;
+
+    // Rehydrate selection from prior saved value
+    const prior = data?.value;
+    if (prior) {
+      let restored = [];
+      // Back-compat: try JSON array first
+      try {
+        const maybe = JSON.parse(prior);
+        if (Array.isArray(maybe)) {
+          restored = maybe.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)).sort();
+        }
+      } catch {
+        // Otherwise parse CSV using designer's (derived) storage format
+        restored = storageCSVToISOArray(prior, settings.displayFormat || 'Y-m-d');
+      }
+      if (restored.length) state.selected = restored;
+    }
+
     runWidget(settings);
+
+    // Apply restored dates to picker UI
+    if (state.selected.length) {
+      fp?.setDate?.(state.selected, true);
+      updateValueAndDisplay();
+    }
   }
 
   function submitHandler() {
     const sortedISO = [...state.selected].sort();
-    const ranges = groupConsecutiveDates(sortedISO);
 
     // Block submit if under min
     if (state.minCount && sortedISO.length < state.minCount) {
@@ -500,18 +538,11 @@ function runWidget(settings) {
       return;
     }
 
-    const useNoYear = rangeIsUnderOneYear(
-      window.__ADP_LAST_SETTINGS__?.startDate,
-      window.__ADP_LAST_SETTINGS__?.endDate
-    );
-
-    const noYearFmt = stripYearTokens(state.fmt);
-    const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
-
-    // Send formatted value to Jotform
+    // Store CSV using designer's (derived) storage format
+    const storageStr = isoArrayToStorageCSV(sortedISO, state.fmt);
     JFCustomWidget.sendSubmit({
       valid: true,
-      value: nice
+      value: storageStr
     });
   }
 
@@ -541,6 +572,8 @@ function runWidget(settings) {
     normalizeSettings,
     validateSettings,
     runWidget,
+    makeStorageFormat,
+    isoArrayToStorageCSV,
+    storageCSVToISOArray,
   };
 })();
-
