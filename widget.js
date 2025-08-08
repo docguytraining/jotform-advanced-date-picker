@@ -1,7 +1,7 @@
 (function () {
   console.log("[widget.js] Script starting");
 
-  // Add this initialization block first
+  // Initialize Jotform widget first
   function initializeJotformWidget() {
     if (typeof window.JFCustomWidget === "object") {
       console.log("[widget.js] JFCustomWidget detected, calling ready()");
@@ -39,40 +39,6 @@
   // Initialize Jotform widget first
   const jotformReady = initializeJotformWidget();
   console.log("[widget.js] Jotform widget ready:", jotformReady);
-
-  document.addEventListener("DOMContentLoaded", function () {
-    console.log("[widget.js] DOMContentLoaded");
-
-    // Wait for both flatpickr AND JFCustomWidget
-    waitFor(
-      () => typeof flatpickr === "function" && (typeof window.JFCustomWidget === "object" || !jotformReady),
-      function () {
-        console.log("[widget.js] All dependencies ready");
-        
-        // Rest of your existing code...
-        // [Continue with your runWidget function and the rest]
-      }
-    );
-  });
-})();
-
-(function () {
-  console.log("[widget.js] Script starting");
-
-  function waitFor(conditionFn, callback, interval = 50, timeout = 5000) {
-    const start = Date.now();
-    const check = () => {
-      if (conditionFn()) {
-        console.log("[widget.js] Dependencies ready");
-        callback();
-      } else if (Date.now() - start < timeout) {
-        setTimeout(check, interval);
-      } else {
-        console.error("[widget.js] Timeout waiting for dependencies");
-      }
-    };
-    check();
-  }
 
   document.addEventListener("DOMContentLoaded", function () {
     console.log("[widget.js] DOMContentLoaded");
@@ -282,7 +248,12 @@
             debugDiv.innerHTML = "<strong>Jotform Widget Settings:</strong><br><pre style='white-space:pre-wrap;'>" +
               JSON.stringify(settings, null, 2) + "</pre>";
           }
+        }
 
+        // Debug: Log JFCustomWidget details
+        if (typeof window.JFCustomWidget === "object") {
+          console.log("JFCustomWidget object:", window.JFCustomWidget);
+          console.log("Available methods:", Object.keys(window.JFCustomWidget || {}));
         }
 
         try {
@@ -306,12 +277,12 @@
                 console.warn("[widget.js] getWidgetSettings did not call back, using fallback settings:", fallbackSettings);
                 runWidget(fallbackSettings);
               }
-            }, 3000);
+            }, 1000); // Reduced timeout to 1 second
 
             JFCustomWidget.getWidgetSettings(function (settings) {
               called = true;
               clearTimeout(timeout);
-              console.log("[widget.js] Received widget settings:", settings);
+              console.log("[widget.js] SUCCESS: Received widget settings:", settings);
               Object.entries(settings).forEach(([key, value]) => {
                 console.log("  ", key, ":", value);
               });
