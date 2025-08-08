@@ -92,8 +92,8 @@
     const maxSelectableDates = Number.isFinite(+raw.maxSelectableDates) ? +raw.maxSelectableDates : 0;
 
     const { numbers: allowedWeekdays } = parseAllowedWeekday(raw.allowedWeekday || '');
-
     const displayFormat = (raw.displayFormat || 'Y-m-d').trim();
+    const excludedDates = parseExcludedDates(raw.excludedDates || '');
 
     return {
       startDate,           // "YYYY-MM-DD"
@@ -102,9 +102,19 @@
       maxSelectableDates,  // integer >= 0 (0 = not enforced)
       displayFormat,       // flatpickr-compatible format
       allowedWeekdays,     // [0..6]
+      excludedDates,       // ["YYYY-MM-DD", ...]
     };
   }
-  
+
+  function parseExcludedDates(raw) {
+    if (!raw) return [];
+    return Array.from(new Set(
+      raw.split(/\s*,\s*/).map(s => s.trim())
+        .filter(Boolean)
+        .filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)) // keep only ISO YYYY-MM-DD
+    ));
+  }
+
   function parseISO(iso) {
     // "YYYY-MM-DD" -> Date (local)
     const [y, m, d] = iso.split('-').map(Number);
@@ -112,15 +122,23 @@
     return new Date(y, m - 1, d);
   }
 
-  function countPossibleDays(startISO, endISO, allowedWeekdays) {
+  function countPossibleDays(startISO, endISO, allowedWeekdays, excluded) {
     if (!startISO || !endISO || !allowedWeekdays || !allowedWeekdays.length) return null;
+
+    const start = parseISO(startISO);
+    const end   = parseISO(endISO);
+    if (!(start <= end)) return 0;
+
     let count = 0;
-    for (let d = parseISO(startISO), end = parseISO(endISO); d <= end; d.setDate(d.getDate() + 1)) {
-      if (allowedWeekdays.includes(d.getDay())) count++;
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (allowedWeekdays.includes(d.getDay()) && !(excluded && excluded.has(iso))) {
+        count++;
+      }
     }
-    
     return count;
   }
+
 
   function validateSettings(s) {
     const errors = [];
@@ -158,6 +176,7 @@
     minCount: 0,
     maxCount: 0,
     allowedWeekdays: [0,1,2,3,4,5,6],
+    excluded: new Set(),
   };
 
   function setWarning(msg) {
@@ -228,6 +247,7 @@
       if (minISO && iso < minISO) return false;
       if (maxISO && iso > maxISO) return false;
 
+      if (state.excluded.has(iso)) return false;
       if (!state.allowedWeekdays.includes(date.getDay())) return false;
 
       // If at max, allow toggling already-selected dates but block new ones
@@ -355,6 +375,8 @@ function runWidget(settings) {
 
     const settings = normalizeSettings(raw);
     log('Normalized settings:', settings);
+    log('allowedWeekdays parsed:', settings.allowedWeekdays);
+    log('excludedDates parsed:', settings.excludedDates);
 
     const errors = validateSettings(settings);
     if (errors.length) {
