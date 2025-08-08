@@ -235,64 +235,47 @@
     }
   }
 
-  function runWidget(settings) {
-    log('runWidget', settings);
-    const calEl = els.calendar();
-    if (!calEl) {
-      error('Calendar element not found');
-      return;
-    }
+function runWidget(settings) {
+  const calEl = document.getElementById('calendar');
+  const minISO = settings.startDate || null;
+  const maxISO = settings.endDate || null;
 
-    state.fmt = settings.displayFormat || 'Y-m-d';
-    state.minCount = settings.minSelectableDates || 0;
-    state.maxCount = settings.maxSelectableDates || 0;
-    state.allowedWeekdays = settings.allowedWeekdays && settings.allowedWeekdays.length
-      ? settings.allowedWeekdays
-      : [0,1,2,3,4,5,6];
+  // ...destroy previous fp if any...
 
-    const minISO = settings.startDate || '';
-    const maxISO = settings.endDate || '';
+  const opts = {
+    mode: 'multiple',
+    inline: true,                 // ← always show calendar
+    // popup-only options irrelevant now:
+    clickOpens: false,
+    allowInput: false,
 
-    // Destroy any previous picker
-    if (fp && fp.destroy) {
-      try { fp.destroy(); } catch {}
-      fp = null;
-    }
+    dateFormat: 'Y-m-d',          // internal value in hidden input
+    altInput: false,
+    altFormat: settings.displayFormat || 'Y-m-d',
+    disableMobile: true,          // consistent desktop behavior
 
-    const opts = {
-      mode: 'multiple',
-      dateFormat: 'Y-m-d',           // internal format we keep in hidden field
-      altInput: false,
-      allowInput: false,
-      clickOpens: true,
-      defaultDate: [],
-      disable: [],                   // we use enable function instead
-      altFormat: state.fmt,          // not used unless altInput true
-      // Limit range if provided
-      minDate: minISO || null,
-      maxDate: maxISO || null,
-      // Enable only dates that pass our checks (range + weekday + max logic)
-      enable: [ makeEnableFn(minISO, maxISO) ],
-      onChange: onChangeHandler,
-      onDayCreate: onDayCreateHandler,
-      onReady: function () {
-        // Initial UI
-        updateValueAndDisplay();
-        if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
-          JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
-        }
-      }
-    };
+    minDate: minISO,              // ← lower bound
+    maxDate: maxISO,              // ← upper bound
+    enable: [ makeEnableFn(minISO, maxISO) ], // your weekday + max logic
 
-    if (!window.flatpickr) {
-      error('flatpickr is not available');
-      setWarning('Calendar library failed to load.');
-      return;
-    }
+    onChange: onChangeHandler,
+    onDayCreate: onDayCreateHandler,
+    onReady() {
+      updateValueAndDisplay();
+      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+    },
+    onMonthChange() {
+      // resize as height can change when month shifts
+      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+    },
+    onYearChange() {
+      JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+    },
+  };
 
-    fp = window.flatpickr(calEl, opts);
-    log('flatpickr created');
-  }
+  fp = window.flatpickr(calEl, opts);
+}
+
 
   // -------------------- Jotform lifecycle --------------------
   function readyHandler(data) {
