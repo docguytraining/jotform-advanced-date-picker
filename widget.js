@@ -178,7 +178,7 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     if (!s.allowedWeekdays.length) errors.push('Select at least one weekday.');
     if (s.minSelectableDates < 0) errors.push('Minimum selectable dates cannot be negative.');
     if (s.maxSelectableDates < 0) errors.push('Maximum selectable dates cannot be negative.');
-    if (s.minSelectableDates && s.maxSelectableDates &&s.maxSelectableDates !== 0 && && s.minSelectableDates > s.maxSelectableDates) {
+    if (s.minSelectableDates && s.maxSelectableDates && s.maxSelectableDates !== 0 && s.minSelectableDates > s.maxSelectableDates) {
       errors.push('Minimum selectable dates cannot be greater than maximum selectable dates.');
     }
 
@@ -215,15 +215,6 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
   function setWarning(msg) {
     const w = els.warn();
     if (w) w.textContent = msg || '';
-  }
-
-  function fmtDate(d, fmt) {
-    // Use flatpickr to format for display without mutating picker
-    try {
-      return window.flatpickr.formatDate(d, fmt || state.fmt);
-    } catch {
-      return d.toISOString().slice(0, 10);
-    }
   }
 
   function toISO(d) {
@@ -314,11 +305,10 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
 
     // Decide formatting mode based on configured range
     const useNoYear = rangeIsUnderOneYear(
-      // These come from settings and were copied into state in runWidget
-      // If you didn’t copy them into state, pass settings.startDate/endDate instead
-      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.startDate) || null,
-      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.endDate) || null
+      window.__ADP_LAST_SETTINGS__?.startdate,
+      window.__ADP_LAST_SETTINGS__?.endDate
     );
+
     const noYearFmt = stripYearTokens(state.fmt);
 
     const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
@@ -337,11 +327,8 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
 
 
   function withinAllowedWeekday(date) {
-    log('allowedWeekdays are:', state.allowedWeekdays);
     const dow = date.getDay(); // 0..6 (Sun..Sat)
     return state.allowedWeekdays.includes(dow);
-    
-    
   }
 
   function disableIfMaxReached(date) {
@@ -350,13 +337,6 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
     const iso = toISO(date);
     if (state.selected.includes(iso)) return false;
     // Otherwise block adding more
-    return true;
-  }
-
-  function dateIsInRange(date, minISO, maxISO) {
-    const iso = toISO(date);
-    if (minISO && iso < minISO) return false;
-    if (maxISO && iso > maxISO) return false;
     return true;
   }
 
@@ -439,7 +419,7 @@ function runWidget(settings) {
   state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
     ? settings.allowedWeekdays
     : [0,1,2,3,4,5,6];
-  state.excluded = new Set(settings.excludledDates || []);
+  state.excluded = new Set(settings.excludedDates || []);
 
   const minISO = settings.startDate || null;
   const maxISO = settings.endDate || null;
@@ -513,10 +493,18 @@ function runWidget(settings) {
     const sortedISO = [...state.selected].sort();
     const ranges = groupConsecutiveDates(sortedISO);
 
+    // Block submit if under min
+    if (state.minCount && sortedISO.length < state.minCount) {
+      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'} before submitting.`);
+      JFCustomWidget.sendSubmit({ valid: false, value: '' });
+      return;
+    }
+
     const useNoYear = rangeIsUnderOneYear(
-      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.startDate) || null,
-      (window.__ADP_LAST_SETTINGS__ && window.__ADP_LAST_SETTINGS__.endDate) || null
+      window.__ADP_LAST_SETTINGS__?.startDate,
+      window.__ADP_LAST_SETTINGS__?.endDate
     );
+
     const noYearFmt = stripYearTokens(state.fmt);
     const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
 
