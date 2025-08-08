@@ -201,17 +201,86 @@
     return `${y}-${m}-${day}`;
   }
 
+  function parseISO(iso) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function areConsecutive(prevISO, nextISO) {
+    const prev = parseISO(prevISO);
+    const next = parseISO(nextISO);
+    // difference of exactly 1 day (handles month/year rollovers)
+    const oneDay = 24 * 60 * 60 * 1000;
+    return (next - prev) === oneDay;
+  }
+
+  function groupConsecutiveDates(datesISO) {
+    if (!datesISO || !datesISO.length) return [];
+    const sorted = [...new Set(datesISO)].sort(); // unique + sort (ISO sorts lexicographically by date)
+    const groups = [];
+    let start = sorted[0];
+    let prev = sorted[0];
+
+    for (let i = 1; i < sorted.length; i++) {
+      const cur = sorted[i];
+      if (areConsecutive(prev, cur)) {
+        // keep extending the current group
+        prev = cur;
+        continue;
+      }
+      // close current group
+      groups.push({ start, end: prev });
+      // start a new group
+      start = cur;
+      prev = cur;
+    }
+    // close the final group
+    groups.push({ start, end: prev });
+    return groups; // [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}, ...]
+  }
+
+  function formatDateISOForUser(iso, fmt) {
+    // flatpickr is already loaded
+    return window.flatpickr.formatDate(parseISO(iso), fmt);
+  }
+
+  function formatRange(range, fmt) {
+    if (range.start === range.end) {
+      return formatDateISOForUser(range.start, fmt);
+    }
+    // Generic: respect the user’s displayFormat for both ends
+    return `${formatDateISOForUser(range.start, fmt)}–${formatDateISOForUser(range.end, fmt)}`;
+  }
+
+  function formatRangesList(ranges, fmt) {
+    if (!ranges.length) return 'No dates selected';
+    const parts = ranges.map(r => formatRange(r, fmt));
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+    return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`;
+  }
+
+
   function updateValueAndDisplay() {
     const out = els.value();
     const disp = els.display();
-    const formatted = state.selected.map(s => {
-      const parts = s.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return fmtDate(d, state.fmt);
-    });
 
-    if (out) out.value = JSON.stringify(state.selected);
-    if (disp) disp.textContent = formatted.join(', ');
+    // Keep hidden value as a sorted JSON array of ISO dates
+    const sortedISO = [...state.selected].sort();
+    if (out) out.value = JSON.stringify(sortedISO);
+
+    // Group consecutive dates into ranges and format for the user
+    const ranges = groupConsecutiveDates(sortedISO);
+    const nice = formatRangesList(ranges, state.fmt);
+
+    if (disp) {
+      const count = sortedISO.length;
+      disp.textContent = count
+        ? `${count} date${count > 1 ? 's' : ''} selected: ${nice}`
+        : 'No dates selected';
+    }
+
+    // Resize the iframe to fit the updated text
     if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
       JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
     }
