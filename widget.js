@@ -39,36 +39,34 @@
   ]);
 
   function parseAllowedWeekday(raw) {
-    if (!raw) return { options: [], checked: [], numbers: [] };
+  if (!raw) return { options: [], checked: [], numbers: [] };
 
-    // Builder shape: "<options (newlines)>,<checked (commas)>"
-    const parts = raw.split(/,(.*)/s);
-    const optionsPart = (parts[0] || '');
-    const checkedPart = (parts[1] || '');
+  // Find the first comma; left side = options (newlines), right side = checked (commas)
+  const firstComma = raw.indexOf(',');
+  const optionsPart = firstComma === -1 ? raw : raw.slice(0, firstComma);
+  const checkedPart = firstComma === -1 ? ''  : raw.slice(firstComma + 1);
 
-    const options = optionsPart
-      .split(/\r?\n+/)
-      .map(s => s.trim())
-      .filter(Boolean);
+  const options = optionsPart
+    .split(/\r?\n+/)
+    .map(s => s.trim())
+    .filter(Boolean);
 
-    const checkedLabels = checkedPart
-      .split(/\s*,\s*/)
-      .map(s => s.trim())
-      .filter(Boolean);
+  const checked = checkedPart
+    .split(/\s*,\s*/)
+    .map(s => s.trim())
+    .filter(Boolean);
 
-    const effective = checkedLabels.length ? checkedLabels : options;
+  const effective = checked.length ? checked : options;
 
-    const toKey = (s) => {
-      const piece = s.includes('|') ? s.split('|').pop() : s; // accept "Label|Value"
-      return piece.trim().toLowerCase();
-    };
+  const toKey = s => (s.includes('|') ? s.split('|').pop() : s).trim().toLowerCase();
 
-    const nums = Array.from(new Set(
-      effective.map(toKey).map(k => DAY_MAP.get(k)).filter(n => Number.isInteger(n))
-    )).sort((a, b) => a - b);
+  const numbers = Array.from(new Set(
+    effective.map(toKey).map(k => DAY_MAP.get(k)).filter(Number.isInteger)
+  )).sort((a, b) => a - b);
 
-    return { options, checked: effective, numbers: nums };
-  }
+  return { options, checked: effective, numbers };
+}
+
 
   function readSettingsFromEvent(data) {
     try {
@@ -173,8 +171,11 @@
   }
 
   function withinAllowedWeekday(date) {
+    log('allowedWeekdays are:', state.allowedWeekdays);
     const dow = date.getDay(); // 0..6 (Sun..Sat)
     return state.allowedWeekdays.includes(dow);
+    
+    
   }
 
   function disableIfMaxReached(date) {
@@ -195,33 +196,54 @@
 
   function makeEnableFn(minISO, maxISO) {
     return function (date) {
-      if (!dateIsInRange(date, minISO, maxISO)) return false;
-      if (!withinAllowedWeekday(date)) return false;
-      if (disableIfMaxReached(date)) return false;
+      const iso = toISO(date);
+      if (minISO && iso < minISO) return false;
+      if (maxISO && iso > maxISO) return false;
+
+      if (!state.allowedWeekdays.includes(date.getDay())) return false;
+
+      // If at max, allow toggling already-selected dates but block new ones
+      if (state.maxCount && state.selected.length >= state.maxCount) {
+        return state.selected.includes(iso);
+      }
       return true;
     };
   }
 
-  function onChangeHandler(selectedDates) {
-    // Build canonical ISO list
-    state.selected = selectedDates.map(toISO);
 
-    // Enforce max count: if user somehow exceeds (keyboard etc.), trim back to earliest picks
-    if (state.maxCount && state.selected.length > state.maxCount) {
-      state.selected = state.selected.slice(0, state.maxCount);
-      // Re-apply to picker without firing infinite loop
-      fp.setDate(state.selected, false);
-    }
+  function onChangeHandler(selectedDates /*, dateStr, instance */) {
+  const before = state.selected.slice(); // previous ISO list
 
-    // Enforce min count warning (do not block selection here)
-    if (state.minCount && state.selected.length < state.minCount) {
-      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
-    } else {
-      setWarning('');
-    }
+  // Normalize to ISO list
+  let iso = (Array.isArray(selectedDates) ? selectedDates : [])
+    .filter(Boolean)
+    .map(d => (d instanceof Date ? d : new Date(d)))
+    .filter(d => !isNaN(d))
+    .map(toISO);
 
+  // Hard-block going over max: revert and warn
+  if (state.maxCount && iso.length > state.maxCount) {
+    setWarning(`You can select up to ${state.maxCount} date${state.maxCount === 1 ? '' : 's'}.`);
+    fp?.setDate?.(before, false);
+    state.selected = before;
     updateValueAndDisplay();
+    fp?.redraw?.();            // ← re-evaluate enable() for each cell
+    return;
   }
+
+  state.selected = iso;
+
+  // Min warning (don’t block here; block on submit if you want)
+  if (state.minCount && state.selected.length < state.minCount) {
+    setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
+  } else {
+    setWarning('');
+  }
+
+  updateValueAndDisplay();
+  fp?.redraw?.();              // ← re-evaluate enable() after each change
+}
+
 
   function onDayCreateHandler(_dObj, _dStr, _fp, dayElem) {
     // When max is reached, add a disabled style for non-selected days
@@ -236,27 +258,40 @@
   }
 
 function runWidget(settings) {
+  log('runWidget', settings);
   const calEl = document.getElementById('calendar');
+  if (!calEl) {
+    error('Calendar element not found');
+    return;
+  }
+
+  // ← COPY settings into state so filters have the right values
+  state.fmt = settings.displayFormat || 'Y-m-d';
+  state.minCount = settings.minSelectableDates || 0;
+  state.maxCount = settings.maxSelectableDates || 0;
+  state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
+    ? settings.allowedWeekdays
+    : [0,1,2,3,4,5,6];
+
   const minISO = settings.startDate || null;
   const maxISO = settings.endDate || null;
 
-  // ...destroy previous fp if any...
+  if (fp && fp.destroy) { try { fp.destroy(); } catch {} fp = null; }
 
   const opts = {
     mode: 'multiple',
-    inline: true,                 // ← always show calendar
-    // popup-only options irrelevant now:
+    inline: true,
     clickOpens: false,
     allowInput: false,
+    disableMobile: true,
 
-    dateFormat: 'Y-m-d',          // internal value in hidden input
+    dateFormat: 'Y-m-d',
     altInput: false,
-    altFormat: settings.displayFormat || 'Y-m-d',
-    disableMobile: true,          // consistent desktop behavior
+    altFormat: state.fmt,
 
-    minDate: minISO,              // ← lower bound
-    maxDate: maxISO,              // ← upper bound
-    enable: [ makeEnableFn(minISO, maxISO) ], // your weekday + max logic
+    minDate: minISO,
+    maxDate: maxISO,
+    enable: [ makeEnableFn(minISO, maxISO) ], // uses state.allowedWeekdays + state.maxCount
 
     onChange: onChangeHandler,
     onDayCreate: onDayCreateHandler,
@@ -265,7 +300,6 @@ function runWidget(settings) {
       JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
     },
     onMonthChange() {
-      // resize as height can change when month shifts
       JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
     },
     onYearChange() {
@@ -273,7 +307,14 @@ function runWidget(settings) {
     },
   };
 
+  if (!window.flatpickr) {
+    error('flatpickr is not available');
+    setWarning('Calendar library failed to load.');
+    return;
+  }
+
   fp = window.flatpickr(calEl, opts);
+  log('flatpickr created');
 }
 
 
@@ -299,12 +340,14 @@ function runWidget(settings) {
 
   function submitHandler() {
     log('submit');
-    const hidden = els.value();
-    const value = hidden ? hidden.value : '[]';
-    if (window.JFCustomWidget && JFCustomWidget.sendSubmit) {
-      JFCustomWidget.sendSubmit({ valid: true, value });
+    if (state.minCount && state.selected.length < state.minCount) {
+      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'} before submitting.`);
+      JFCustomWidget.sendSubmit({ valid: false, value: JSON.stringify(state.selected) });
+      return;
     }
+    JFCustomWidget.sendSubmit({ valid: true, value: JSON.stringify(state.selected) });
   }
+
 
   // Subscribe if API is present now; otherwise, retry on DOM ready.
   function wireJotform() {
