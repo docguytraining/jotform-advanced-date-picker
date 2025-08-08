@@ -305,7 +305,7 @@ function formatDateISOForUserCompact(iso, fullFmt, noYear) {
 
     // Decide formatting mode based on configured range
     const useNoYear = rangeIsUnderOneYear(
-      window.__ADP_LAST_SETTINGS__?.startdate,
+      window.__ADP_LAST_SETTINGS__?.startDate,
       window.__ADP_LAST_SETTINGS__?.endDate
     );
 
