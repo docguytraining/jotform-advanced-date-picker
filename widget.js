@@ -151,16 +151,22 @@
     if (!s.allowedWeekdays.length) errors.push('Select at least one weekday.');
     if (s.minSelectableDates < 0) errors.push('Minimum selectable dates cannot be negative.');
     if (s.maxSelectableDates < 0) errors.push('Maximum selectable dates cannot be negative.');
-    if (s.minSelectableDates && s.maxSelectableDates && s.minSelectableDates > s.maxSelectableDates) {
+    if (s.minSelectableDates && s.maxSelectableDates &&s.maxSelectableDates !== 0 && && s.minSelectableDates > s.maxSelectableDates) {
       errors.push('Minimum selectable dates cannot be greater than maximum selectable dates.');
     }
 
-    const possible = countPossibleDays(s.startDate, s.endDate, s.allowedWeekdays);
+    const possible = countPossibleDays(
+      s.startDate,
+      s.endDate,
+      s.allowedWeekdays,
+      new Set(s.excludedDates || [])
+    );
+
     if (possible !== null) {
       if (s.minSelectableDates && s.minSelectableDates > possible) {
         errors.push(`Minimum selectable dates (${s.minSelectableDates}) exceeds available dates in range (${possible}).`);
       }
-      if (s.maxSelectableDates && s.maxSelectableDates > possible) {
+      if (s.maxSelectableDates && s.maxSelectableDates !== 0 && s.maxSelectableDates > possible) {
         errors.push(`Maximum selectable dates (${s.maxSelectableDates}) exceeds available dates in range (${possible}).`);
       }
     }
@@ -199,11 +205,6 @@
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-  }
-
-  function parseISO(iso) {
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d);
   }
 
   function areConsecutive(prevISO, nextISO) {
@@ -382,13 +383,14 @@ function runWidget(settings) {
     return;
   }
 
-  // ← COPY settings into state so filters have the right values
+  // COPY settings into state so filters have the right values
   state.fmt = settings.displayFormat || 'Y-m-d';
   state.minCount = settings.minSelectableDates || 0;
   state.maxCount = settings.maxSelectableDates || 0;
   state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
     ? settings.allowedWeekdays
     : [0,1,2,3,4,5,6];
+  state.excluded = new Set(settings.excludledDates || []);
 
   const minISO = settings.startDate || null;
   const maxISO = settings.endDate || null;
