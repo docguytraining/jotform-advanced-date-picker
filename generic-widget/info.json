@@ -15,7 +15,7 @@
       "description":"Used only to render on example page. Not Required except for example page"
     },
     {
-      "file":"widget.js",
+      "file":"../jotform-widget/widget.js",
       "description":"Connects jotform to script. Required ONLY for Jotform integration"
     }
   ],

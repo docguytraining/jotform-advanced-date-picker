@@ -2,25 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Advanced Date Picker – Standalone Demo</title>
+  <title data-keep>Advanced Date Picker – Standalone Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link data-keep rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-  <!-- Flatpickr CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
-    .row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
-    fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 16px 0; }
-    legend { padding: 0 6px; color: #444; }
-    #calendar { margin: 8px 0 12px; }
-    #calendar-warning { color: #b00020; min-height: 1.2em; }
-    #selectedDatesDisplay { margin-top: 8px; font-weight: 500; }
-    code { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
-    .output { white-space: pre-wrap; background:#f6f8fa; padding:10px; border-radius:8px; }
-  </style>
 </head>
 <body>
+  <main class="container">
+ 
   <h1>Advanced Date Picker – Standalone Demo</h1>
 
   <fieldset>
@@ -86,9 +75,20 @@
   </div>
 
   <!-- flatpickr + core ADP -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="./advanced-date-picker.js"></script>
+ <script data-keep src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script data-keep src="generic-widget/advanced-date-picker.js"></script>
 
+  <style data-keep>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
+    fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 16px 0; }
+    legend { padding: 0 6px; color: #444; }
+    #calendar { margin: 8px 0 12px; }
+    #calendar-warning { color: #b00020; min-height: 1.2em; }
+    #selectedDatesDisplay { margin-top: 8px; font-weight: 500; }
+    code { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
+    .output { white-space: pre-wrap; background:#f6f8fa; padding:10px; border-radius:8px; }
+  </style>
   <script>
     // --- UI elements ---
     const els = {
@@ -96,7 +96,6 @@
       warn: document.getElementById('calendar-warning'),
       disp: document.getElementById('selectedDatesDisplay'),
       hidden: document.getElementById('selectedDates'),
-
       start: document.getElementById('startDate'),
       end: document.getElementById('endDate'),
       minSel: document.getElementById('minSel'),
@@ -104,7 +103,6 @@
       fmt: document.getElementById('displayFmt'),
       excluded: document.getElementById('excluded'),
       apply: document.getElementById('applyBtn'),
-
       isoOut: document.getElementById('isoOut'),
       csvOut: document.getElementById('csvOut'),
       summaryOut: document.getElementById('summaryOut'),
@@ -159,5 +157,68 @@
       // setOptions() re-inits and triggers onReady->updateOutputs()
     });
   </script>
+  
+  </main>
+  <script data-keep>
+      (function () {
+        function init() {
+          try {
+            // Replace this block with your real initialization if different.
+            // Example: create/attach the date picker to #calendar.
+            if (window.AdvancedDatePicker && document.getElementById('calendar')) {
+              // Example config; adjust to your needs
+              const config = {
+                startDate: '2025-08-01',
+                endDate: '2025-09-30',
+                allowedWeekdays: [2, 3, 4, 6], // Tue, Wed, Thu, Sat
+                excludedDates: ['2025-08-19', '2025-09-01', '2025-08-30'],
+                minSelectableDates: 2,
+                maxSelectableDates: 15,
+                displayFormat: 'd M',
+                onChange: function (dates) {
+                  const out = document.getElementById('outputs');
+                  if (out) out.textContent = dates.map(d => d.toISOString().slice(0,10)).join(', ');
+                }
+              };
+
+              // Instantiate (API may differ in your code; adjust as needed)
+              new window.AdvancedDatePicker('#calendar', config);
+            } else {
+              console.warn('AdvancedDatePicker or #calendar not available yet.');
+            }
+          } catch (e) {
+            console.error('Failed to initialize AdvancedDatePicker:', e);
+          }
+        }
+
+        // Run after DOM is ready (and will run again after the wrapper rebuilds the body)
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', init, { once: true });
+        } else {
+          init();
+        }
+      })();
+    </script>
+    <script data-keep>
+  (function () {
+    if (window.__ADP_INIT_DONE__) return;
+    window.__ADP_INIT_DONE__ = true;
+
+    function init() {
+      const el = document.getElementById('calendar');
+      if (!el || el.dataset.initialized === "1") return;
+      // ... create your calendar ...
+      el.dataset.initialized = "1";
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+  })();
+</script>
+
+   <script src="assets/wrap-page.js" defer></script>
 </body>
 </html>
