@@ -169,15 +169,27 @@
   }
 
   // Build a storage-safe format (CSV) from a display format:
-  // - force numeric month/day/year so we can round-trip reliably
+  // - remove weekday tokens (D = short weekday, l = long weekday)
+  // - replace month name tokens (F, M) with numeric month (m)
+  // - ensure a year token is present (normalize to Y)
   function makeStorageFormat(displayFmt) {
-    // Simple heuristic: if display fmt contains month names or weekday tokens, fall back to ISO 'Y-m-d'
-    // Otherwise, ensure 'Y-m-d' ordering. You can expand this if you need smarter mapping.
-    const hasMonthNames = /F|M/i.test(displayFmt);
-    const hasWeekday = /D|l/i.test(displayFmt);
-    if (hasMonthNames || hasWeekday) return 'Y-m-d';
-    // If already numeric components exist, still prefer ISO to keep CSV parse-safe.
-    return 'Y-m-d';
+    let f = (displayFmt || 'Y-m-d').trim();
+
+    // Remove weekday tokens (D = short weekday, l = long weekday); keep d (day of month)
+    f = f.replace(/[Dl]/g, '').replace(/\s{2,}/g, ' ').trim();
+
+    // Replace month name tokens with numeric month for unambiguous storage
+    f = f.replace(/[FM]/g, 'm');
+
+    // Ensure there is a year token; normalize to full 'Y'
+    if (!/[Yy]/.test(f)) {
+      f = (f.length && /\w$/.test(f)) ? (f + ' Y') : (f + 'Y');
+    } else {
+      f = f.replace(/y/g, 'Y');
+    }
+
+    if (!f.replace(/[^A-Za-z]/g, '').length) f = 'Y-m-d';
+    return f;
   }
 
   // -------------------- core class --------------------
@@ -374,6 +386,66 @@
     }
 
     // --- external API ---
+
+    getSelectionInfo() {
+      const count = this.state.selected.length;
+      const min = this.state.minCount || 0;
+      const max = this.state.maxCount || 0;
+      const possible = countPossibleDays(
+        this.settings.startDate,
+        this.settings.endDate,
+        this.state.allowedWeekdays,
+        this.state.excluded
+      ) || 0;
+      const limit = max || possible;
+      const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+      const meetsMin = !min || count >= min;
+      const atMax = max > 0 && count >= max;
+      return { count, min, max, possible, limit, pct, meetsMin, atMax };
+    }
+
+    getAllEnabledISO() {
+      const startISO = this.settings.startDate;
+      const endISO = this.settings.endDate;
+      if (!startISO || !endISO) return [];
+      const start = parseISO(startISO);
+      const end = parseISO(endISO);
+      const result = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = toISO(d);
+        if (this.state.allowedWeekdays.includes(d.getDay()) && !this.state.excluded.has(iso)) {
+          result.push(iso);
+        }
+      }
+      return result;
+    }
+
+    selectAll() {
+      let all = this.getAllEnabledISO();
+      if (this.state.maxCount && all.length > this.state.maxCount) {
+        all = all.slice(0, this.state.maxCount);
+      }
+      this.state.selected = all;
+      this.fp?.setDate?.(this.state.selected, false);
+      this.callbacks.onWarning('');
+      this.updateDisplay();
+      this.fp?.redraw?.();
+      this.callbacks.onChange(this.getISO());
+    }
+
+    clearAll() {
+      this.state.selected = [];
+      this.fp?.clear?.();
+      if (this.state.minCount) {
+        this.callbacks.onWarning(`Select at least ${this.state.minCount} date${this.state.minCount === 1 ? '' : 's'}.`);
+      } else {
+        this.callbacks.onWarning('');
+      }
+      this.updateDisplay();
+      this.fp?.redraw?.();
+      this.callbacks.onChange(this.getISO());
+    }
+
     getISO() {
       return [...this.state.selected].sort();
     }

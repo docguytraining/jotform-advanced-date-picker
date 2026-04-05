@@ -74,6 +74,14 @@
 
   <h2>Calendar</h2>
   <div id="calendar"></div>
+  <div class="adp-toolbar">
+    <button type="button" id="adp-select-all" class="adp-btn">Select All</button>
+    <button type="button" id="adp-clear-all" class="adp-btn adp-btn--secondary">Clear All</button>
+  </div>
+  <div id="adp-progress-bar" class="adp-progress" aria-hidden="true">
+    <div id="adp-progress-fill" class="adp-progress__fill"></div>
+  </div>
+  <div id="adp-progress-label" class="adp-progress__label"></div>
   <div id="calendar-warning"></div>
   <div id="selectedDatesDisplay">No dates selected</div>
   <input type="hidden" id="selectedDates" />
@@ -143,7 +151,37 @@
       els.isoOut.textContent = JSON.stringify(iso);
       els.csvOut.textContent = csv;
       els.summaryOut.textContent = summary;
+
+      // Update progress bar
+      const info = adp.getSelectionInfo();
+      const fill = document.getElementById('adp-progress-fill');
+      const label = document.getElementById('adp-progress-label');
+      if (fill) {
+        fill.style.width = info.pct + '%';
+        fill.classList.remove('adp-progress--under', 'adp-progress--ok', 'adp-progress--full');
+        if (!info.meetsMin) fill.classList.add('adp-progress--under');
+        else if (info.atMax) fill.classList.add('adp-progress--full');
+        else fill.classList.add('adp-progress--ok');
+      }
+      if (label) {
+        let text = `${info.count} selected`;
+        if (info.max) text += ` of ${info.max} max`;
+        if (info.min) text += ` (${info.min} min)`;
+        label.textContent = text;
+      }
+      const btnAll = document.getElementById('adp-select-all');
+      const btnClear = document.getElementById('adp-clear-all');
+      if (btnAll) btnAll.disabled = info.atMax || info.count >= info.possible;
+      if (btnClear) btnClear.disabled = info.count === 0;
     }
+
+    // Select All / Clear All buttons
+    document.getElementById('adp-select-all').addEventListener('click', () => {
+      adp.selectAll();
+    });
+    document.getElementById('adp-clear-all').addEventListener('click', () => {
+      adp.clearAll();
+    });
 
     // Apply settings button -> reconfigure core picker
     els.apply.addEventListener('click', () => {
