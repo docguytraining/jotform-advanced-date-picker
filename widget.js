@@ -1,10 +1,13 @@
 /* widget.js - Advanced Date Picker (Jotform widget)
+   Thin integration layer between AdvancedDatePicker core and Jotform.
+
    Assumptions:
    - HTML includes:
        <div id="calendar"></div>
        <div id="calendar-warning"></div>
        <div id="selectedDatesDisplay"></div>
        <input type="hidden" id="selectedDates" name="selectedDates" />
+   - advanced-date-picker.js loaded before this file (provides window.AdvancedDatePicker).
    - flatpickr is loaded before this file.
    - Jotform API (JotFormCustomWidget.min.js) is loaded before this file.
 */
@@ -19,84 +22,25 @@
 
   log('Script starting');
 
+  // Core class + utilities (from advanced-date-picker.js)
+  const ADP = window.AdvancedDatePicker;
+  const utils = ADP && ADP.utils;
+
   // -------------------- DOM refs --------------------
   const els = {
     calendar: () => document.getElementById('calendar'),
     warn: () => document.getElementById('calendar-warning'),
     display: () => document.getElementById('selectedDatesDisplay'),
     value: () => document.getElementById('selectedDates'),
-    progressBar: () => document.getElementById('adp-progress-bar'),
     progressFill: () => document.getElementById('adp-progress-fill'),
     progressLabel: () => document.getElementById('adp-progress-label'),
     btnSelectAll: () => document.getElementById('adp-select-all'),
     btnClearAll: () => document.getElementById('adp-clear-all'),
   };
 
-  // -------------------- settings pipeline --------------------
-  const DAY_MAP = new Map([
-    ['sunday', 0], ['sun', 0], ['0', 0], ['7', 0],
-    ['monday', 1], ['mon', 1], ['1', 1],
-    ['tuesday', 2], ['tue', 2], ['tues', 2], ['2', 2],
-    ['wednesday', 3], ['wed', 3], ['3', 3],
-    ['thursday', 4], ['thu', 4], ['thur', 4], ['thurs', 4], ['4', 4],
-    ['friday', 5], ['fri', 5], ['5', 5],
-    ['saturday', 6], ['sat', 6], ['6', 6],
-  ]);
-
-  function parseAllowedWeekday(raw) {
-    if (!raw) return { options: [], checked: [], numbers: [] };
-
-    // Find the first comma; left side = options (newlines), right side = checked (commas)
-    const firstComma = raw.indexOf(',');
-    const optionsPart = firstComma === -1 ? raw : raw.slice(0, firstComma);
-    const checkedPart = firstComma === -1 ? ''  : raw.slice(firstComma + 1);
-
-    const options = optionsPart
-      .split(/\r?\n+/)
-      .map(s => s.trim())
-      .filter(Boolean);
-
-    const checked = checkedPart
-      .split(/\s*,\s*/)
-      .map(s => s.trim())
-      .filter(Boolean);
-
-    const effective = checked.length ? checked : options;
-    const toKey = s => (s.includes('|') ? s.split('|').pop() : s).trim().toLowerCase();
-
-    const numbers = Array.from(new Set(
-      effective.map(toKey).map(k => DAY_MAP.get(k)).filter(Number.isInteger)
-    )).sort((a, b) => a - b);
-
-    return { options, checked: effective, numbers };
-  }
-
-  function rangeIsUnderOneYear(startISO, endISO) {
-    if (!startISO || !endISO) return false;
-    const start = parseISO(startISO);
-    const end = parseISO(endISO);
-    const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-    return (end - start) < ONE_YEAR_MS;
-  }
-
-  // Strip year tokens from a flatpickr format string (Y or y) and tidy spaces/punctuation
-  function stripYearTokens(fmt) {
-    if (!fmt) return 'M j';
-    let f = fmt.replace(/[Yy]+/g, '').replace(/\s*,\s*,/g, ','); // remove year tokens
-    f = f.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();   // clean doubles / spaces
-    if (!/[MDjFlmnUd]/i.test(f)) f = 'M j';                       // fallback if empty-ish
-    return f;
-  }
-
-  function monthShortName(d) {
-    return window.flatpickr.formatDate(d, 'M'); // e.g., Aug
-  }
-
-  // Use either full format (with year) or a compact format (without year)
-  function formatDateISOForUserCompact(iso, fullFmt, noYear) {
-    const d = parseISO(iso);
-    return window.flatpickr.formatDate(d, noYear || fullFmt);
-  }
+  // -------------------- Jotform settings parsing --------------------
+  // Jotform delivers settings in a quirky encoded format that needs
+  // special handling before passing to the core ADP class.
 
   function readSettingsFromEvent(data) {
     try {
@@ -114,25 +58,14 @@
     return readSettingsFromEvent(data);
   }
 
-  function parseExcludedDates(raw) {
-    if (!raw) return [];
-    return Array.from(new Set(
-      raw.split(/\s*,\s*/).map(s => s.trim())
-        .filter(Boolean)
-        .filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)) // keep only ISO YYYY-MM-DD
-    ));
-  }
-
   function normalizeSettings(raw) {
     const startDate = (raw.startDate || '').trim();
     const endDate = (raw.endDate || '').trim();
-
     const minSelectableDates = Number.isFinite(+raw.minSelectableDates) ? +raw.minSelectableDates : 0;
     const maxSelectableDates = Number.isFinite(+raw.maxSelectableDates) ? +raw.maxSelectableDates : 0;
-
-    const { numbers: allowedWeekdays } = parseAllowedWeekday(raw.allowedWeekday || '');
+    const allowedWeekdays = utils.parseAllowedWeekday(raw.allowedWeekday || '');
     const displayFormat = (raw.displayFormat || 'Y-m-d').trim();
-    const excludedDates = parseExcludedDates(raw.excludedDates || '');
+    const excludedDates = utils.parseExcludedDates(raw.excludedDates || '');
 
     return {
       startDate,           // "YYYY-MM-DD"
@@ -143,29 +76,6 @@
       allowedWeekdays,     // [0..6]
       excludedDates,       // ["YYYY-MM-DD", ...]
     };
-  }
-
-  function parseISO(iso) {
-    // "YYYY-MM-DD" -> Date (local)
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
-
-  function countPossibleDays(startISO, endISO, allowedWeekdays, excluded) {
-    if (!startISO || !endISO || !allowedWeekdays || !allowedWeekdays.length) return null;
-
-    const start = parseISO(startISO);
-    const end   = parseISO(endISO);
-    if (!(start <= end)) return 0;
-
-    let count = 0;
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      if (allowedWeekdays.includes(d.getDay()) && !(excluded && excluded.has(iso))) {
-        count++;
-      }
-    }
-    return count;
   }
 
   function validateSettings(s) {
@@ -183,11 +93,8 @@
       errors.push('Minimum selectable dates cannot be greater than maximum selectable dates.');
     }
 
-    const possible = countPossibleDays(
-      s.startDate,
-      s.endDate,
-      s.allowedWeekdays,
-      new Set(s.excludedDates || [])
+    const possible = utils.countPossibleDays(
+      s.startDate, s.endDate, s.allowedWeekdays, new Set(s.excludedDates || [])
     );
 
     if (possible !== null) {
@@ -202,382 +109,159 @@
     return errors;
   }
 
-  // -------------------- storage using designer's display format (but parse-safe) --------------------
-  function makeStorageFormat(displayFmt) {
-    let f = (displayFmt || 'Y-m-d').trim();
+  // -------------------- Jotform storage (CSV) --------------------
 
-    // Remove weekday tokens (D = short weekday, l = long weekday)
-    f = f.replace(/[Dl]/g, '').replace(/\s{2,}/g, ' ').trim();
-
-    // Replace month name tokens with numeric month for unambiguous storage
-    f = f.replace(/[FM]/g, 'm');
-
-    // Ensure there is a year token; normalize to full 'Y'
-    if (!/[Yy]/.test(f)) {
-      f = (f.length && /\w$/.test(f)) ? (f + ' Y') : (f + 'Y');
-    } else {
-      f = f.replace(/y/g, 'Y');
-    }
-
-    if (!f.replace(/[^A-Za-z]/g, '').length) f = 'Y-m-d';
-    return f;
-  }
-
-  function isoArrayToStorageCSV(isoArr, storageFmtOrDisplayFmt) {
-    const fmt = makeStorageFormat(storageFmtOrDisplayFmt);
+  function isoArrayToStorageCSV(isoArr, displayFmt) {
+    const fmt = utils.makeStorageFormat(displayFmt);
     return (isoArr || [])
-      .map(s => window.flatpickr.formatDate(parseISO(s), fmt))
+      .map(s => window.flatpickr.formatDate(utils.parseISO(s), fmt))
       .join(', ');
   }
 
-  function storageCSVToISOArray(str, storageFmtOrDisplayFmt) {
+  function storageCSVToISOArray(str, displayFmt) {
     if (!str || typeof str !== 'string') return [];
-    const fmt = makeStorageFormat(storageFmtOrDisplayFmt);
-
+    const fmt = utils.makeStorageFormat(displayFmt);
     const out = [];
     for (const token of str.split(/\s*,\s*/).filter(Boolean)) {
       const d = window.flatpickr.parseDate(token, fmt);
-      if (d && !isNaN(d)) out.push(toISO(d));
+      if (d && !isNaN(d)) out.push(utils.toISO(d));
     }
     return Array.from(new Set(out)).sort();
   }
 
-  // -------------------- calendar runtime --------------------
-  let fp = null;
-  let state = {
-    selected: [], // array of ISO strings "YYYY-MM-DD"
-    fmt: 'Y-m-d',
-    minCount: 0,
-    maxCount: 0,
-    allowedWeekdays: [0,1,2,3,4,5,6],
-    excluded: new Set(),
-  };
+  // -------------------- ADP instance + UI updates --------------------
+  let adp = null;
 
   function setWarning(msg) {
     const w = els.warn();
     if (w) w.textContent = msg || '';
   }
 
-  function toISO(d) {
-    // Convert Date -> "YYYY-MM-DD" in local time
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  function areConsecutive(prevISO, nextISO) {
-    const prev = parseISO(prevISO);
-    const next = parseISO(nextISO);
-    const oneDay = 24 * 60 * 60 * 1000;
-    return (next - prev) === oneDay;
-  }
-
-  function groupConsecutiveDates(datesISO) {
-    if (!datesISO || !datesISO.length) return [];
-    const sorted = [...new Set(datesISO)].sort();
-    const groups = [];
-    let start = sorted[0];
-    let prev = sorted[0];
-
-    for (let i = 1; i < sorted.length; i++) {
-      const cur = sorted[i];
-      if (areConsecutive(prev, cur)) {
-        prev = cur;
-        continue;
-      }
-      groups.push({ start, end: prev });
-      start = cur;
-      prev = cur;
+  function sendCurrentData() {
+    if (!adp) return;
+    try {
+      const storageStr = isoArrayToStorageCSV(adp.getISO(), adp.state.fmt);
+      JFCustomWidget?.sendData?.({ value: storageStr });
+    } catch (e) {
+      warn('sendData failed', e);
     }
-    groups.push({ start, end: prev });
-    return groups; // [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}, ...]
   }
 
-  function formatDateISOForUser(iso, fmt) {
-    return window.flatpickr.formatDate(parseISO(iso), fmt);
-  }
-
-  function formatRange(range, fullFmt, noYearFmt, useNoYear) {
-    if (range.start === range.end) {
-      return formatDateISOForUserCompact(range.start, fullFmt, useNoYear ? noYearFmt : null);
-    }
-
-    if (useNoYear) {
-      // Compact: "Aug 19–20" if same month; otherwise "Aug 19–Sep 2"
-      const s = parseISO(range.start);
-      const e = parseISO(range.end);
-      const sameMonth = (s.getFullYear() === e.getFullYear()) && (s.getMonth() === e.getMonth());
-      if (sameMonth) {
-        return `${monthShortName(s)} ${String(s.getDate())}\u2013${String(e.getDate())}`;
-      }
-      return `${monthShortName(s)} ${s.getDate()}\u2013${monthShortName(e)} ${e.getDate()}`;
-    }
-
-    return `${formatDateISOForUser(range.start, fullFmt)}\u2013${formatDateISOForUser(range.end, fullFmt)}`;
-  }
-
-  function formatRangesList(ranges, fullFmt, noYearFmt, useNoYear) {
-    if (!ranges.length) return 'No dates selected';
-    const parts = ranges.map(r => formatRange(r, fullFmt, noYearFmt, useNoYear));
-    if (parts.length === 1) return parts[0];
-    if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
-    return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`;
-  }
-
-  function updateValueAndDisplay() {
-    const out = els.value();
-    const disp = els.display();
-
-    const sortedISO = [...state.selected].sort();
-    if (out) out.value = JSON.stringify(sortedISO);
-
-    const ranges = groupConsecutiveDates(sortedISO);
-
-    // Decide formatting mode for on-screen display
-    const useNoYear = rangeIsUnderOneYear(
-      window.__ADP_LAST_SETTINGS__?.startDate,
-      window.__ADP_LAST_SETTINGS__?.endDate
-    );
-    const noYearFmt = stripYearTokens(state.fmt);
-    const nice = formatRangesList(ranges, state.fmt, noYearFmt, useNoYear);
-
-    if (disp) {
-      const count = sortedISO.length;
-      disp.textContent = count
-        ? `${count} date${count > 1 ? 's' : ''} selected: ${nice}`
-        : 'No dates selected';
-    }
-
-    updateProgressBar();
-
+  function resizeFrame() {
     if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
       JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
     }
   }
 
+  function updateValueAndDisplay() {
+    if (!adp) return;
+    const out = els.value();
+    const disp = els.display();
+    const sortedISO = adp.getISO();
+
+    if (out) out.value = JSON.stringify(sortedISO);
+
+    const settings = window.__ADP_LAST_SETTINGS__;
+    const summary = adp.getHumanSummary(settings?.startDate, settings?.endDate);
+
+    if (disp) {
+      const count = sortedISO.length;
+      disp.textContent = count
+        ? `${count} date${count > 1 ? 's' : ''} selected: ${summary}`
+        : 'No dates selected';
+    }
+
+    updateProgressBar();
+    resizeFrame();
+  }
+
   function updateProgressBar() {
+    if (!adp) return;
     const fill = els.progressFill();
     const label = els.progressLabel();
     if (!fill || !label) return;
 
-    const count = state.selected.length;
-    const max = state.maxCount || 0;
-    const settings = window.__ADP_LAST_SETTINGS__;
-    const possible = settings
-      ? countPossibleDays(settings.startDate, settings.endDate, state.allowedWeekdays, state.excluded)
-      : 0;
-    const limit = max || possible || 0;
-    const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
-    const meetsMin = !state.minCount || count >= state.minCount;
+    const info = adp.getSelectionInfo();
+    const bar = document.getElementById('adp-progress-bar');
 
-    fill.style.width = pct + '%';
+    fill.style.width = info.pct + '%';
+    if (bar) {
+      bar.setAttribute('aria-valuenow', info.count);
+      bar.setAttribute('aria-valuemax', info.limit);
+    }
     fill.classList.remove('adp-progress--under', 'adp-progress--ok', 'adp-progress--full');
-    if (!meetsMin) {
+    if (!info.meetsMin) {
       fill.classList.add('adp-progress--under');
-    } else if (max && count >= max) {
+    } else if (info.atMax) {
       fill.classList.add('adp-progress--full');
     } else {
       fill.classList.add('adp-progress--ok');
     }
 
-    let text = `${count} selected`;
-    if (max) text += ` of ${max} max`;
-    if (state.minCount) text += ` (${state.minCount} min)`;
+    let text = `${info.count} selected`;
+    if (info.max) text += ` of ${info.max} max`;
+    if (info.min) text += ` (${info.min} min)`;
     label.textContent = text;
 
-    // Update button states
     const btnAll = els.btnSelectAll();
     const btnClear = els.btnClearAll();
-    if (btnAll) btnAll.disabled = (max > 0 && count >= max) || (possible !== null && count >= possible);
-    if (btnClear) btnClear.disabled = count === 0;
-  }
-
-  function getAllEnabledDates() {
-    const settings = window.__ADP_LAST_SETTINGS__;
-    if (!settings || !settings.startDate || !settings.endDate) return [];
-    const start = parseISO(settings.startDate);
-    const end = parseISO(settings.endDate);
-    const result = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const iso = toISO(d);
-      if (state.allowedWeekdays.includes(d.getDay()) && !state.excluded.has(iso)) {
-        result.push(iso);
-      }
-    }
-    return result;
+    if (btnAll) btnAll.disabled = info.atMax || info.count >= info.possible;
+    if (btnClear) btnClear.disabled = info.count === 0;
   }
 
   function selectAllDates() {
-    let all = getAllEnabledDates();
-    if (state.maxCount && all.length > state.maxCount) {
-      all = all.slice(0, state.maxCount);
-    }
-    state.selected = all;
-    fp?.setDate?.(state.selected, false);
-    setWarning('');
-    updateValueAndDisplay();
-    fp?.redraw?.();
-    try {
-      const storageStr = isoArrayToStorageCSV([...state.selected].sort(), state.fmt);
-      JFCustomWidget?.sendData?.({ value: storageStr });
-    } catch (e) { warn('sendData failed', e); }
+    if (!adp) return;
+    adp.selectAll();
+    sendCurrentData();
   }
 
   function clearAllDates() {
-    state.selected = [];
-    fp?.clear?.();
-    if (state.minCount) {
-      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
-    } else {
-      setWarning('');
-    }
-    updateValueAndDisplay();
-    fp?.redraw?.();
-    try {
-      JFCustomWidget?.sendData?.({ value: '' });
-    } catch (e) { warn('sendData failed', e); }
+    if (!adp) return;
+    adp.clearAll();
+    try { JFCustomWidget?.sendData?.({ value: '' }); } catch (e) { warn('sendData failed', e); }
   }
 
-  function makeEnableFn(minISO, maxISO) {
-    return function (date) {
-      const iso = toISO(date);
-      if (minISO && iso < minISO) return false;
-      if (maxISO && iso > maxISO) return false;
-
-      if (state.excluded.has(iso)) return false;
-      if (!state.allowedWeekdays.includes(date.getDay())) return false;
-
-      // If at max, allow toggling already-selected dates but block new ones
-      if (state.maxCount && state.selected.length >= state.maxCount) {
-        return state.selected.includes(iso);
-      }
-      return true;
-    };
-  }
-
-  function onChangeHandler(selectedDates /*, dateStr, instance */) {
-    const before = state.selected.slice(); // previous ISO list
-
-    // Normalize to ISO list
-    let iso = (Array.isArray(selectedDates) ? selectedDates : [])
-      .filter(Boolean)
-      .map(d => (d instanceof Date ? d : new Date(d)))
-      .filter(d => !isNaN(d))
-      .map(toISO);
-
-    // Hard-block going over max: revert and warn
-    if (state.maxCount && iso.length > state.maxCount) {
-      setWarning(`You can select up to ${state.maxCount} date${state.maxCount === 1 ? '' : 's'}.`);
-      fp?.setDate?.(before, false);
-      state.selected = before;
-      updateValueAndDisplay();
-      fp?.redraw?.();
-      return;
-    }
-
-    state.selected = iso;
-
-    // Min warning (do not block here; block on submit)
-    if (state.minCount && state.selected.length < state.minCount) {
-      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
-    } else {
-      setWarning('');
-    }
-
-    updateValueAndDisplay();
-
-    // Auto-save current value (Tables/editor contexts use sendData)
-    try {
-      const storageStr = isoArrayToStorageCSV([...state.selected].sort(), state.fmt);
-      JFCustomWidget?.sendData?.({ value: storageStr });
-    } catch (e) {
-      warn('sendData failed', e);
-    }
-
-    fp?.redraw?.();
-  }
-
-  function onDayCreateHandler(_dObj, _dStr, _fp, dayElem) {
-    // Visual aid when max is reached (optional to keep)
-    if (state.maxCount && state.selected.length >= state.maxCount) {
-      const date = dayElem.dateObj;
-      const iso = toISO(date);
-      if (!state.selected.includes(iso)) {
-        dayElem.classList.add('flatpickr-disabled');
-        dayElem.setAttribute('aria-disabled', 'true');
-      }
-    }
-  }
+  // -------------------- widget init --------------------
 
   function runWidget(settings) {
     log('runWidget', settings);
-    const calEl = document.getElementById('calendar');
-    if (!calEl) {
-      error('Calendar element not found');
-      return;
-    }
+    const calEl = els.calendar();
+    if (!calEl) { error('Calendar element not found'); return; }
+    if (!window.flatpickr) { error('flatpickr is not available'); setWarning('Calendar library failed to load.'); return; }
+    if (!ADP) { error('AdvancedDatePicker not available'); setWarning('Core library failed to load.'); return; }
 
-    // COPY settings into state so filters have the right values
-    state.fmt = settings.displayFormat || 'Y-m-d';
-    state.minCount = settings.minSelectableDates || 0;
-    state.maxCount = settings.maxSelectableDates || 0;
-    state.allowedWeekdays = (settings.allowedWeekdays && settings.allowedWeekdays.length)
-      ? settings.allowedWeekdays
-      : [0,1,2,3,4,5,6];
-    state.excluded = new Set(settings.excludedDates || []);
+    if (adp) { adp.destroy(); adp = null; }
 
-    const minISO = settings.startDate || null;
-    const maxISO = settings.endDate || null;
-
-    if (fp && fp.destroy) { try { fp.destroy(); } catch {} fp = null; }
-
-    const opts = {
-      mode: 'multiple',
-      inline: true,
-      clickOpens: false,
-      allowInput: false,
-      disableMobile: true,
-
-      dateFormat: 'Y-m-d',
-      altInput: false,
-      altFormat: state.fmt,
-
-      minDate: minISO,
-      maxDate: maxISO,
-      enable: [ makeEnableFn(minISO, maxISO) ], // uses state.allowedWeekdays + state.maxCount
-
-      onChange: onChangeHandler,
-      onDayCreate: onDayCreateHandler,
-      onReady() {
+    adp = new ADP(calEl, {
+      startDate: settings.startDate,
+      endDate: settings.endDate,
+      minSelectableDates: settings.minSelectableDates,
+      maxSelectableDates: settings.maxSelectableDates,
+      displayFormat: settings.displayFormat,
+      allowedWeekday: settings.allowedWeekdays,
+      excludedDates: settings.excludedDates,
+      onWarning: setWarning,
+      onChange: () => {
         updateValueAndDisplay();
-        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+        sendCurrentData();
       },
-      onMonthChange() {
-        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
+      onReady: () => {
+        updateValueAndDisplay();
+        resizeFrame();
       },
-      onYearChange() {
-        JFCustomWidget?.requestFrameResize?.({ height: document.body.scrollHeight });
-      },
-    };
+    });
 
-    if (!window.flatpickr) {
-      error('flatpickr is not available');
-      setWarning('Calendar library failed to load.');
-      return;
-    }
+    log('ADP instance created');
 
-    fp = window.flatpickr(calEl, opts);
-    log('flatpickr created');
-
-    // Wire up Select All / Clear All buttons
+    // Wire up Select All / Clear All buttons (onclick replaces previous handler)
     const btnAll = els.btnSelectAll();
     const btnClear = els.btnClearAll();
-    if (btnAll) btnAll.addEventListener('click', selectAllDates);
-    if (btnClear) btnClear.addEventListener('click', clearAllDates);
+    if (btnAll) btnAll.onclick = selectAllDates;
+    if (btnClear) btnClear.onclick = clearAllDates;
   }
 
   // -------------------- Jotform lifecycle --------------------
+
   function readyHandler(data) {
     log('JF widget ready:', true);
 
@@ -586,8 +270,6 @@
 
     const settings = normalizeSettings(raw);
     log('Normalized settings:', settings);
-    log('allowedWeekdays parsed:', settings.allowedWeekdays);
-    log('excludedDates parsed:', settings.excludedDates);
 
     const errors = validateSettings(settings);
     if (errors.length) {
@@ -598,9 +280,11 @@
 
     window.__ADP_LAST_SETTINGS__ = settings;
 
+    runWidget(settings);
+
     // Rehydrate selection from prior saved value
     const prior = data?.value;
-    if (prior) {
+    if (prior && adp) {
       let restored = [];
       // Back-compat: try JSON array first
       try {
@@ -612,41 +296,36 @@
         // Otherwise parse CSV using designer's (derived) storage format
         restored = storageCSVToISOArray(prior, settings.displayFormat || 'Y-m-d');
       }
-      if (restored.length) state.selected = restored;
-    }
-
-    runWidget(settings);
-
-    // Apply restored dates to picker UI (triggerChange=false to avoid
-    // unnecessary sendData during rehydration)
-    if (state.selected.length) {
-      fp?.setDate?.(state.selected, false);
-      updateValueAndDisplay();
+      if (restored.length) {
+        adp.setDateISO(restored);
+        updateValueAndDisplay();
+      }
     }
   }
 
   function submitHandler() {
-    const sortedISO = [...state.selected].sort();
-
-    // Block submit if under min
-    if (state.minCount && sortedISO.length < state.minCount) {
-      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'} before submitting.`);
+    if (!adp) {
       JFCustomWidget.sendSubmit({ valid: false, value: '' });
       return;
     }
 
-    // Store CSV using designer's (derived) storage format
-    const storageStr = isoArrayToStorageCSV(sortedISO, state.fmt);
-    JFCustomWidget.sendSubmit({
-      valid: true,
-      value: storageStr
-    });
+    const sortedISO = adp.getISO();
+    const info = adp.getSelectionInfo();
+
+    if (!info.meetsMin) {
+      setWarning(`Select at least ${info.min} date${info.min === 1 ? '' : 's'} before submitting.`);
+      JFCustomWidget.sendSubmit({ valid: false, value: '' });
+      return;
+    }
+
+    const storageStr = isoArrayToStorageCSV(sortedISO, adp.state.fmt);
+    JFCustomWidget.sendSubmit({ valid: true, value: storageStr });
   }
 
   // Subscribe if API is present now; otherwise, retry on DOM ready.
   function wireJotform() {
     if (window.JFCustomWidget && JFCustomWidget.subscribe) {
-      log('JFCustomWidget detected, calling ready()');
+      log('JFCustomWidget detected');
       JFCustomWidget.subscribe('ready', readyHandler);
       JFCustomWidget.subscribe('submit', submitHandler);
     } else {
@@ -663,16 +342,15 @@
     wireJotform();
   }
 
-  // Expose for debugging (optional)
+  // Expose for debugging
   window.__ADP_DEBUG__ = {
-    parseAllowedWeekday,
     normalizeSettings,
     validateSettings,
     runWidget,
-    makeStorageFormat,
     isoArrayToStorageCSV,
     storageCSVToISOArray,
     selectAllDates,
     clearAllDates,
+    get adp() { return adp; },
   };
 })();

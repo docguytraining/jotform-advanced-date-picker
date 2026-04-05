@@ -1,0 +1,15 @@
+{
+  "name": "jotform-advanced-date-picker",
+  "version": "1.1.0",
+  "description": "A Jotform custom widget for selecting multiple dates within a configured range.",
+  "author": "Paul Pehrson <paulpehrson@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": ["jotform", "widget", "date-picker", "flatpickr", "calendar"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docguytraining/jotform-advanced-date-picker"
+  }
+}

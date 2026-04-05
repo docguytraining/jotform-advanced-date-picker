@@ -49,7 +49,7 @@
       "type": "text",
       "label": "Date Display Format",
       "default": "M d",
-      "hint": "Determines how single dates are shown. Ranges may shorten the format for readability (e.g., 'Aug 19-21' instead of 'Aug 19-Aug 21' or '08-19-21'). Pick a format that works well for both single dates and ranges.Examples: Y-m-d (2025-08-19), d M (19 Aug), D, M j (Tue, Aug 19)."
+      "hint": "Determines how single dates are shown. Ranges may shorten the format for readability (e.g., 'Aug 19-21' instead of 'Aug 19-Aug 21'). Examples: Y-m-d (2025-08-19), d M (19 Aug), D, M j (Tue, Aug 19). See date-formats.html for the full token reference."
     },
     {
       "name": "allowedWeekday",

@@ -515,4 +515,20 @@
   // UMD-ish export
   global.AdvancedDatePicker = AdvancedDatePicker;
 
+  // Static utilities for consumers (e.g. widget.js) that need low-level helpers
+  // without duplicating the implementations.
+  AdvancedDatePicker.utils = {
+    parseISO,
+    toISO,
+    parseExcludedDates,
+    parseAllowedWeekday,
+    countPossibleDays,
+    makeStorageFormat,
+    rangeIsUnderOneYear,
+    stripYearTokens,
+    groupConsecutiveDates,
+    formatDateISOForUser,
+    formatRangesList,
+  };
+
 })(window);

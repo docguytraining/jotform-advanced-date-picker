@@ -21,21 +21,22 @@
 
   <!-- Other libraries -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="advanced-date-picker.js"></script>
   <script src="widget.js"></script>
 </head>
 <body>
   <main>
     <div id="calendar"></div>
-    <div class="adp-toolbar">
-      <button type="button" id="adp-select-all" class="adp-btn">Select All</button>
-      <button type="button" id="adp-clear-all" class="adp-btn adp-btn--secondary">Clear All</button>
+    <div class="adp-toolbar" role="toolbar" aria-label="Date selection actions">
+      <button type="button" id="adp-select-all" class="adp-btn" aria-label="Select all available dates">Select All</button>
+      <button type="button" id="adp-clear-all" class="adp-btn adp-btn--secondary" aria-label="Clear all selected dates">Clear All</button>
     </div>
-    <div id="adp-progress-bar" class="adp-progress" aria-hidden="true">
+    <div id="adp-progress-bar" class="adp-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" aria-label="Date selection progress">
       <div id="adp-progress-fill" class="adp-progress__fill"></div>
     </div>
-    <div id="adp-progress-label" class="adp-progress__label"></div>
-    <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
-    <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
+    <div id="adp-progress-label" class="adp-progress__label" aria-live="polite"></div>
+    <div id="calendar-warning" role="alert" aria-live="assertive" style="color: red; margin-top: 0.5em;"></div>
+    <div id="selectedDatesDisplay" aria-live="polite" style="margin-top: 0.5em;"></div>
     <input type="hidden" id="selectedDates" name="selectedDates" />
   </main>
 </body>
