@@ -169,15 +169,27 @@
   }
 
   // Build a storage-safe format (CSV) from a display format:
-  // - force numeric month/day/year so we can round-trip reliably
+  // - remove weekday tokens (D = short weekday, l = long weekday)
+  // - replace month name tokens (F, M) with numeric month (m)
+  // - ensure a year token is present (normalize to Y)
   function makeStorageFormat(displayFmt) {
-    // Simple heuristic: if display fmt contains month names or weekday tokens, fall back to ISO 'Y-m-d'
-    // Otherwise, ensure 'Y-m-d' ordering. You can expand this if you need smarter mapping.
-    const hasMonthNames = /F|M/i.test(displayFmt);
-    const hasWeekday = /D|l/i.test(displayFmt);
-    if (hasMonthNames || hasWeekday) return 'Y-m-d';
-    // If already numeric components exist, still prefer ISO to keep CSV parse-safe.
-    return 'Y-m-d';
+    let f = (displayFmt || 'Y-m-d').trim();
+
+    // Remove weekday tokens (D = short weekday, l = long weekday); keep d (day of month)
+    f = f.replace(/[Dl]/g, '').replace(/\s{2,}/g, ' ').trim();
+
+    // Replace month name tokens with numeric month for unambiguous storage
+    f = f.replace(/[FM]/g, 'm');
+
+    // Ensure there is a year token; normalize to full 'Y'
+    if (!/[Yy]/.test(f)) {
+      f = (f.length && /\w$/.test(f)) ? (f + ' Y') : (f + 'Y');
+    } else {
+      f = f.replace(/y/g, 'Y');
+    }
+
+    if (!f.replace(/[^A-Za-z]/g, '').length) f = 'Y-m-d';
+    return f;
   }
 
   // -------------------- core class --------------------

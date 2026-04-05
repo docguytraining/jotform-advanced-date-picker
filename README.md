@@ -26,7 +26,7 @@ A custom Jotform widget that lets form users select multiple dates within a defi
 4. The widget sends back **formatted text** (CSV using your display format), so it looks clean in Jotform Tables.
 
 ## Installation
-1. Host the widget files (`index.html`, `widget.js`, `style.css`) on a public server or GitHub Pages.  
+1. Host the widget files (`rendered-jotform-widget.html`, `advanced-date-picker.js`, `widget.js`, `style.css`) on a public server or GitHub Pages.  
 2. Add the widget to your Jotform form via **Custom Widget**.  
 3. Configure the widget settings:
    - **Start Date**  
@@ -37,9 +37,15 @@ A custom Jotform widget that lets form users select multiple dates within a defi
    - **Display Format** (e.g., `Y-m-d`, `M j`, `d M Y`)  
 
 ## File Overview
-- **index.html** – Container and script load order.  
-- **widget.js** – Logic, parsing/formatting, constraint enforcement, Jotform API integration.  
+- **rendered-jotform-widget.html** – Jotform widget iframe template (the URL you give Jotform).  
+- **index.html** – Standalone demo page for local development and testing.  
+- **advanced-date-picker.js** – Core, framework-agnostic date picker class (reusable outside Jotform).  
+- **widget.js** – Jotform integration layer: settings parsing, lifecycle, constraint enforcement.  
 - **style.css** – Calendar and widget styles.  
+- **widget.json** – Jotform widget metadata and settings schema.  
+- **info.json** – Project metadata, dependency info, and settings reference.  
+- **branding.html** – CSS customization guide.  
+- **date-formats.html** – Flatpickr format token reference.  
 - **Flatpickr** – Loaded from CDN.
 
 ---
@@ -182,7 +188,7 @@ const log = (...args) => console.log('[widget.js]', ...args);
 
 1. **Add widget to Jotform**
     - In the Jotform Form Builder, add a Custom Widget.  
-    - Set the widget’s URL to the hosted `index.html` file.
+    - Set the widget’s URL to the hosted `rendered-jotform-widget.html` file.
 
 1. **Configure date settings**
     - **Start Date** / **End Date** → in `YYYY-MM-DD` format.  

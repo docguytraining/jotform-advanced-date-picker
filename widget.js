@@ -521,9 +521,10 @@
 
     runWidget(settings);
 
-    // Apply restored dates to picker UI
+    // Apply restored dates to picker UI (triggerChange=false to avoid
+    // unnecessary sendData during rehydration)
     if (state.selected.length) {
-      fp?.setDate?.(state.selected, true);
+      fp?.setDate?.(state.selected, false);
       updateValueAndDisplay();
     }
   }
