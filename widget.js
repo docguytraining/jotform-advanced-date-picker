@@ -25,6 +25,11 @@
     warn: () => document.getElementById('calendar-warning'),
     display: () => document.getElementById('selectedDatesDisplay'),
     value: () => document.getElementById('selectedDates'),
+    progressBar: () => document.getElementById('adp-progress-bar'),
+    progressFill: () => document.getElementById('adp-progress-fill'),
+    progressLabel: () => document.getElementById('adp-progress-label'),
+    btnSelectAll: () => document.getElementById('adp-select-all'),
+    btnClearAll: () => document.getElementById('adp-clear-all'),
   };
 
   // -------------------- settings pipeline --------------------
@@ -344,9 +349,94 @@
         : 'No dates selected';
     }
 
+    updateProgressBar();
+
     if (window.JFCustomWidget && JFCustomWidget.requestFrameResize) {
       JFCustomWidget.requestFrameResize({ height: document.body.scrollHeight });
     }
+  }
+
+  function updateProgressBar() {
+    const fill = els.progressFill();
+    const label = els.progressLabel();
+    if (!fill || !label) return;
+
+    const count = state.selected.length;
+    const max = state.maxCount || 0;
+    const settings = window.__ADP_LAST_SETTINGS__;
+    const possible = settings
+      ? countPossibleDays(settings.startDate, settings.endDate, state.allowedWeekdays, state.excluded)
+      : 0;
+    const limit = max || possible || 0;
+    const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+    const meetsMin = !state.minCount || count >= state.minCount;
+
+    fill.style.width = pct + '%';
+    fill.classList.remove('adp-progress--under', 'adp-progress--ok', 'adp-progress--full');
+    if (!meetsMin) {
+      fill.classList.add('adp-progress--under');
+    } else if (max && count >= max) {
+      fill.classList.add('adp-progress--full');
+    } else {
+      fill.classList.add('adp-progress--ok');
+    }
+
+    let text = `${count} selected`;
+    if (max) text += ` of ${max} max`;
+    if (state.minCount) text += ` (${state.minCount} min)`;
+    label.textContent = text;
+
+    // Update button states
+    const btnAll = els.btnSelectAll();
+    const btnClear = els.btnClearAll();
+    if (btnAll) btnAll.disabled = (max > 0 && count >= max) || (possible !== null && count >= possible);
+    if (btnClear) btnClear.disabled = count === 0;
+  }
+
+  function getAllEnabledDates() {
+    const settings = window.__ADP_LAST_SETTINGS__;
+    if (!settings || !settings.startDate || !settings.endDate) return [];
+    const start = parseISO(settings.startDate);
+    const end = parseISO(settings.endDate);
+    const result = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = toISO(d);
+      if (state.allowedWeekdays.includes(d.getDay()) && !state.excluded.has(iso)) {
+        result.push(iso);
+      }
+    }
+    return result;
+  }
+
+  function selectAllDates() {
+    let all = getAllEnabledDates();
+    if (state.maxCount && all.length > state.maxCount) {
+      all = all.slice(0, state.maxCount);
+    }
+    state.selected = all;
+    fp?.setDate?.(state.selected, false);
+    setWarning('');
+    updateValueAndDisplay();
+    fp?.redraw?.();
+    try {
+      const storageStr = isoArrayToStorageCSV([...state.selected].sort(), state.fmt);
+      JFCustomWidget?.sendData?.({ value: storageStr });
+    } catch (e) { warn('sendData failed', e); }
+  }
+
+  function clearAllDates() {
+    state.selected = [];
+    fp?.clear?.();
+    if (state.minCount) {
+      setWarning(`Select at least ${state.minCount} date${state.minCount === 1 ? '' : 's'}.`);
+    } else {
+      setWarning('');
+    }
+    updateValueAndDisplay();
+    fp?.redraw?.();
+    try {
+      JFCustomWidget?.sendData?.({ value: '' });
+    } catch (e) { warn('sendData failed', e); }
   }
 
   function makeEnableFn(minISO, maxISO) {
@@ -479,6 +569,12 @@
 
     fp = window.flatpickr(calEl, opts);
     log('flatpickr created');
+
+    // Wire up Select All / Clear All buttons
+    const btnAll = els.btnSelectAll();
+    const btnClear = els.btnClearAll();
+    if (btnAll) btnAll.addEventListener('click', selectAllDates);
+    if (btnClear) btnClear.addEventListener('click', clearAllDates);
   }
 
   // -------------------- Jotform lifecycle --------------------
@@ -576,5 +672,7 @@
     makeStorageFormat,
     isoArrayToStorageCSV,
     storageCSVToISOArray,
+    selectAllDates,
+    clearAllDates,
   };
 })();

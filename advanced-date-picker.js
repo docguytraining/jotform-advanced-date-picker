@@ -386,6 +386,66 @@
     }
 
     // --- external API ---
+
+    getSelectionInfo() {
+      const count = this.state.selected.length;
+      const min = this.state.minCount || 0;
+      const max = this.state.maxCount || 0;
+      const possible = countPossibleDays(
+        this.settings.startDate,
+        this.settings.endDate,
+        this.state.allowedWeekdays,
+        this.state.excluded
+      ) || 0;
+      const limit = max || possible;
+      const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+      const meetsMin = !min || count >= min;
+      const atMax = max > 0 && count >= max;
+      return { count, min, max, possible, limit, pct, meetsMin, atMax };
+    }
+
+    getAllEnabledISO() {
+      const startISO = this.settings.startDate;
+      const endISO = this.settings.endDate;
+      if (!startISO || !endISO) return [];
+      const start = parseISO(startISO);
+      const end = parseISO(endISO);
+      const result = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = toISO(d);
+        if (this.state.allowedWeekdays.includes(d.getDay()) && !this.state.excluded.has(iso)) {
+          result.push(iso);
+        }
+      }
+      return result;
+    }
+
+    selectAll() {
+      let all = this.getAllEnabledISO();
+      if (this.state.maxCount && all.length > this.state.maxCount) {
+        all = all.slice(0, this.state.maxCount);
+      }
+      this.state.selected = all;
+      this.fp?.setDate?.(this.state.selected, false);
+      this.callbacks.onWarning('');
+      this.updateDisplay();
+      this.fp?.redraw?.();
+      this.callbacks.onChange(this.getISO());
+    }
+
+    clearAll() {
+      this.state.selected = [];
+      this.fp?.clear?.();
+      if (this.state.minCount) {
+        this.callbacks.onWarning(`Select at least ${this.state.minCount} date${this.state.minCount === 1 ? '' : 's'}.`);
+      } else {
+        this.callbacks.onWarning('');
+      }
+      this.updateDisplay();
+      this.fp?.redraw?.();
+      this.callbacks.onChange(this.getISO());
+    }
+
     getISO() {
       return [...this.state.selected].sort();
     }

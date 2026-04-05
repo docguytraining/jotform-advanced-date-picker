@@ -26,10 +26,17 @@
 <body>
   <main>
     <div id="calendar"></div>
+    <div class="adp-toolbar">
+      <button type="button" id="adp-select-all" class="adp-btn">Select All</button>
+      <button type="button" id="adp-clear-all" class="adp-btn adp-btn--secondary">Clear All</button>
+    </div>
+    <div id="adp-progress-bar" class="adp-progress" aria-hidden="true">
+      <div id="adp-progress-fill" class="adp-progress__fill"></div>
+    </div>
+    <div id="adp-progress-label" class="adp-progress__label"></div>
     <div id="calendar-warning" style="color: red; margin-top: 0.5em;"></div>
     <div id="selectedDatesDisplay" style="margin-top: 0.5em;"></div>
     <input type="hidden" id="selectedDates" name="selectedDates" />
-
   </main>
 </body>
 </html>
